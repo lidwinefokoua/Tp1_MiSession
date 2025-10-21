@@ -1,10 +1,237 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Gestion des Étudiants, Cours et Inscriptions</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        header {
+            background-color: #0d6efd;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .card {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border: none;
+            border-radius: 12px;
+        }
+        img#photoEtudiant {
+            width: 130px;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #dee2e6;
+            background-color: #fff;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .actions button, .actions a {
+            margin-right: 6px;
+        }
+    </style>
 </head>
+
 <body>
+
+<header>🎓 Gestion des Étudiants, Cours et Inscriptions</header>
+
+<div class="container-fluid my-4">
+    <div class="row g-4">
+
+        <!-- SECTION ÉTUDIANTS -->
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h5 class="card-title mb-3">Étudiants</h5>
+
+                <!-- Formulaire Étudiant en haut -->
+                <div class="text-center mb-3">
+                    <img id="photoEtudiant" src="images/0.jpg" alt="Photo étudiant">
+                </div>
+
+                <form id="formEtudiant">
+                    <div class="mb-2">
+                        <label class="form-label">Prénom</label>
+                        <input type="text" id="prenom" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Nom</label>
+                        <input type="text" id="nom" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="email" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Numéro DA</label>
+                        <input type="text" id="DA" class="form-control form-control-sm" placeholder="ex: 1234">
+                    </div>
+
+                    <div class="actions mb-3">
+                        <button type="button" class="btn btn-success btn-sm">Ajouter</button>
+                        <button type="button" class="btn btn-primary btn-sm">Modifier</button>
+                        <button type="button" class="btn btn-danger btn-sm">Supprimer</button>
+                    </div>
+                </form>
+
+                <hr>
+
+                <!-- Tableau des étudiants en dessous -->
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Courriel</th>
+                            <th>DA</th>
+                            <th>Détails</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tableEtudiants">
+                        <!-- Données dynamiques -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="d-flex justify-content-between align-items-center my-2">
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm" id="firstBtn">«</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="prevBtn">‹</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="nextBtn">›</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="lastBtn">»</button>
+                    </div>
+                    <div>
+                        <label class="me-1">Éléments/page:</label>
+                        <select id="nombre" class="form-select form-select-sm d-inline-block w-auto">
+                            <option>5</option>
+                            <option>10</option>
+                            <option>20</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION COURS -->
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h5 class="card-title mb-3">Cours</h5>
+
+                <!-- Tableau des cours en haut -->
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Nom du cours</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tableCours">
+                        <!-- Dynamique -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Formulaire des cours en dessous -->
+                <form id="formCours">
+                    <div class="mb-2">
+                        <label class="form-label">Code du cours</label>
+                        <input type="text" id="codeCours" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nom du cours</label>
+                        <input type="text" id="nomCours" class="form-control form-control-sm">
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-success btn-sm">Ajouter</button>
+                        <button type="button" class="btn btn-primary btn-sm">Modifier</button>
+                        <button type="button" class="btn btn-danger btn-sm">Supprimer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- SECTION INSCRIPTIONS -->
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h5 class="card-title mb-3">Inscriptions</h5>
+
+                <!-- Tableau des inscriptions en haut -->
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Étudiant</th>
+                            <th>Cours</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tableInscriptions">
+                        <!-- Dynamique -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Formulaire en dessous -->
+                <form id="formInscription">
+                    <div class="mb-2">
+                        <label class="form-label">Étudiant</label>
+                        <select id="selectEtudiant" class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cours</label>
+                        <select id="selectCours" class="form-select form-select-sm"></select>
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm mb-3">Inscrire</button>
+                </form>
+
+                <div class="actions">
+                    <button type="button" class="btn btn-danger btn-sm">Désinscrire</button>
+                    <a href="#" class="btn btn-outline-secondary btn-sm">Export PDF</a>
+                    <a href="#" class="btn btn-outline-secondary btn-sm">Export CSV</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ⚡ Affiche automatiquement l'image selon le numéro DA
+    const daInput = document.getElementById("DA");
+    const photoEtudiant = document.getElementById("photoEtudiant");
+
+    daInput.addEventListener("input", () => {
+        const da = daInput.value.trim();
+        if (da && !isNaN(da)) {
+            photoEtudiant.src = `images/${da}.jpg`;
+        } else {
+            photoEtudiant.src = "images/0.jpg";
+        }
+    });
+
+    // Image par défaut si non trouvée
+    photoEtudiant.onerror = () => {
+        photoEtudiant.src = "images/0.jpg";
+    };
+</script>
 
 </body>
 </html>

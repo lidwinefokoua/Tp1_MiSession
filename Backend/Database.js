@@ -207,6 +207,36 @@ export async function getCoursByEtudiant(idEtudiant) {
     }
 }
 
+// Récupérer les inscriptions d’un étudiant (détails complets)
+export async function getInscriptionsByEtudiant(idEtudiant) {
+    const client = await pool.connect();
+    try {
+        const sql = `
+            SELECT 
+                i.id AS id_inscription,
+                i.date_inscription,
+                c.id AS id_cours,
+                c.code,
+                c.nom AS nom_cours,
+                c.duree,
+                c.enseignant
+            FROM s4205se_${process.env.PGUSER}.inscription i
+            JOIN s4205se_${process.env.PGUSER}.cours c
+              ON c.id = i.cours_id
+            WHERE i.etudiant_id = $1
+            ORDER BY i.date_inscription DESC;
+        `;
+        const res = await client.query(sql, [idEtudiant]);
+        return res.rows;
+    } catch (err) {
+        console.error("Erreur getInscriptionsByEtudiant:", err);
+        return [];
+    } finally {
+        client.release();
+    }
+}
+
+
 // Inscrire un étudiant à un cours
 export async function addInscription(idEtudiant, idCours) {
     const client = await pool.connect();

@@ -152,7 +152,7 @@ export async function getAllCours(limit, offset = 0) {
     }
 }
 
-// Ajouter un cours
+// Ajouter un cours.
 export async function addCours(cours) {
     const client = await pool.connect();
     try {

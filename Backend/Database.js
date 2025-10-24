@@ -10,16 +10,16 @@ const pool = new Pool(options);
 
 
 //Obtenir tous les étudiants (limité à 50)
-export async function getAllEtudiants() {
+export async function getAllEtudiants(limit, offset = 0) {
     const client = await pool.connect();
     try {
         const sql = `
             SELECT id, nom, prenom, courriel, da
             FROM s4205se_${process.env.PGUSER}.etudiants
             ORDER BY id ASC
-                LIMIT 50;
+            LIMIT $1 OFFSET $2;
         `;
-        const res = await client.query(sql);
+        const res = await client.query(sql, [limit, offset]);
         return res.rows;
     } catch (err) {
         console.error("Erreur getAllEtudiants:", err);
@@ -133,15 +133,16 @@ export async function deleteEtudiant(id) {
 
 
 // Tous les cours
-export async function getAllCours() {
+export async function getAllCours(limit, offset = 0) {
     const client = await pool.connect();
     try {
         const sql = `
             SELECT id, code, nom, duree, enseignant
             FROM s4205se_${process.env.PGUSER}.cours
             ORDER BY code ASC;
+            LIMIT $1 OFFSET $2;
         `;
-        const res = await client.query(sql);
+        const res = await client.query(sql,[limit, offset]);
         return res.rows;
     } catch (err) {
         console.error("Erreur getAllCours:", err);
@@ -175,9 +176,7 @@ export async function addCours(cours) {
     }
 }
 
-/* ======================
-   🧾 TABLE INSCRIPTION
-   ====================== */
+
 
 // Récupérer les cours d’un étudiant
 export async function getCoursByEtudiant(idEtudiant) {

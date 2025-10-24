@@ -8,7 +8,8 @@ const { Pool } = pg;
 const pool = new Pool(options);
 
 
-// Obtenir tous les étudiants
+
+//Obtenir tous les étudiants (limité à 50)
 export async function getAllEtudiants() {
     const client = await pool.connect();
     try {
@@ -16,13 +17,28 @@ export async function getAllEtudiants() {
             SELECT id, nom, prenom, courriel, da
             FROM s4205se_${process.env.PGUSER}.etudiants
             ORDER BY id ASC
-            LIMIT 50;
+                LIMIT 50;
         `;
         const res = await client.query(sql);
         return res.rows;
     } catch (err) {
         console.error("Erreur getAllEtudiants:", err);
         return [];
+    } finally {
+        client.release();
+    }
+}
+
+// Obtenir le nombre total d'étudiants
+export async function getEtudiantsCount() {
+    const client = await pool.connect();
+    try {
+        const sql = `SELECT COUNT(*) AS total FROM s4205se_${process.env.PGUSER}.etudiants;`;
+        const res = await client.query(sql);
+        return parseInt(res.rows[0].total);
+    } catch (err) {
+        console.error("Erreur getEtudiantsCount:", err);
+        return 0;
     } finally {
         client.release();
     }
@@ -54,7 +70,7 @@ export async function addEtudiant(etudiant) {
         const sql = `
             INSERT INTO s4205se_${process.env.PGUSER}.etudiants (nom, prenom, courriel, da)
             VALUES ($1, $2, $3, $4)
-            RETURNING *;
+                RETURNING *;
         `;
         const res = await client.query(sql, [
             etudiant.nom,
@@ -100,7 +116,7 @@ export async function updateEtudiant(etudiant) {
     }
 }
 
-//  Supprimer un étudiant
+// Supprimer un étudiant
 export async function deleteEtudiant(id) {
     const client = await pool.connect();
     try {
@@ -115,11 +131,8 @@ export async function deleteEtudiant(id) {
     }
 }
 
-/* ======================
-   📘 TABLE COURS
-   ====================== */
 
-// 🔹 Tous les cours
+// Tous les cours
 export async function getAllCours() {
     const client = await pool.connect();
     try {
@@ -138,14 +151,14 @@ export async function getAllCours() {
     }
 }
 
-// 🔹 Ajouter un cours
+// Ajouter un cours
 export async function addCours(cours) {
     const client = await pool.connect();
     try {
         const sql = `
             INSERT INTO s4205se_${process.env.PGUSER}.cours (code, nom, duree, enseignant)
             VALUES ($1, $2, $3, $4)
-            RETURNING *;
+                RETURNING *;
         `;
         const res = await client.query(sql, [
             cours.code,
@@ -166,7 +179,7 @@ export async function addCours(cours) {
    🧾 TABLE INSCRIPTION
    ====================== */
 
-// 🔹 Récupérer les cours d’un étudiant
+// Récupérer les cours d’un étudiant
 export async function getCoursByEtudiant(idEtudiant) {
     const client = await pool.connect();
     try {
@@ -179,8 +192,8 @@ export async function getCoursByEtudiant(idEtudiant) {
                    c.enseignant,
                    i.date_inscription
             FROM s4205se_${process.env.PGUSER}.inscription i
-            JOIN s4205se_${process.env.PGUSER}.cours c
-              ON c.id = i.cours_id
+                     JOIN s4205se_${process.env.PGUSER}.cours c
+                          ON c.id = i.cours_id
             WHERE i.etudiant_id = $1
             ORDER BY i.date_inscription DESC;
         `;
@@ -194,14 +207,14 @@ export async function getCoursByEtudiant(idEtudiant) {
     }
 }
 
-// 🔹 Inscrire un étudiant à un cours
+// Inscrire un étudiant à un cours
 export async function addInscription(idEtudiant, idCours) {
     const client = await pool.connect();
     try {
         const sql = `
             INSERT INTO s4205se_${process.env.PGUSER}.inscription (etudiant_id, cours_id, date_inscription)
             VALUES ($1, $2, NOW())
-            RETURNING *;
+                RETURNING *;
         `;
         const res = await client.query(sql, [idEtudiant, idCours]);
         return res.rows[0];
@@ -213,7 +226,7 @@ export async function addInscription(idEtudiant, idCours) {
     }
 }
 
-// 🔹 Supprimer une inscription
+// Supprimer une inscription
 export async function deleteInscription(idInscription) {
     const client = await pool.connect();
     try {

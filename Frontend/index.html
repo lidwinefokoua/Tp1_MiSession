@@ -55,7 +55,7 @@
 
                 <!-- Formulaire Étudiant en haut -->
                 <div class="text-center mb-3">
-                    <img id="photoEtudiant" src="images/0.jpg" alt="Photo étudiant">
+                    <img id="photoEtudiant" src="./../photos/0.png" alt="Photo étudiant">
                 </div>
 
                 <form id="formEtudiant">
@@ -216,26 +216,6 @@
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-    // ⚡ Affiche automatiquement l'image selon le numéro DA
-    const daInput = document.getElementById("DA");
-    const photoEtudiant = document.getElementById("photoEtudiant");
-
-    daInput.addEventListener("input", () => {
-        const da = daInput.value.trim();
-        if (da && !isNaN(da)) {
-            photoEtudiant.src = `images/${da}.jpg`;
-        } else {
-            photoEtudiant.src = "images/0.jpg";
-        }
-    });
-
-    // Image par défaut si non trouvée
-    photoEtudiant.onerror = () => {
-        photoEtudiant.src = "images/0.jpg";
-    };
-</script>
 
 </body>
 </html>

@@ -8,7 +8,6 @@ const { Pool } = pg;
 const pool = new Pool(options);
 
 
-
 //Obtenir tous les étudiants (limité à 50)
 export async function getAllEtudiants(limit, offset = 0) {
     const client = await pool.connect();
@@ -269,3 +268,42 @@ export async function deleteInscription(idInscription) {
         client.release();
     }
 }
+
+export async function searchEtudiants(search, limit, offset) {
+    const client = await pool.connect();
+    try {
+        const pattern = `%${search}%`;
+        const sql = `
+            SELECT id, nom, prenom, courriel, da
+            FROM s4205se_${process.env.PGUSER}.etudiants
+            WHERE LOWER(nom) LIKE LOWER($1)
+               OR LOWER(prenom) LIKE LOWER($1)
+               OR CAST(da AS TEXT) LIKE $1
+            ORDER BY id ASC
+            LIMIT $2 OFFSET $3;
+        `;
+        const res = await client.query(sql, [pattern, limit, offset]);
+        return res.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function countSearchEtudiants(search) {
+    const client = await pool.connect();
+    try {
+        const pattern = `%${search}%`;
+        const sql = `
+            SELECT COUNT(*) AS total
+            FROM s4205se_${process.env.PGUSER}.etudiants
+            WHERE LOWER(nom) LIKE LOWER($1)
+               OR LOWER(prenom) LIKE LOWER($1)
+               OR CAST(da AS TEXT) LIKE $1;
+        `;
+        const res = await client.query(sql, [pattern]);
+        return parseInt(res.rows[0].total);
+    } finally {
+        client.release();
+    }
+}
+

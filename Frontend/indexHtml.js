@@ -5,8 +5,8 @@ let pageSize = 50;
 
 window.onload = () => {
     loadEtudiants();
-    loadCours();
-    loadInscriptions();
+   //  loadCours();
+    // loadInscriptions();
 };
 
 // ========================
@@ -26,10 +26,9 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
             <td>${user.first_name}</td>
             <td>${user.email}</td>
             <td>${user.da || ""}</td>
-            <td><button class="btn btn-outline-info btn-sm">👁</button></td>
         `;
 
-        tr.querySelector("button").addEventListener("click", () => {
+        tr.addEventListener("click", () => {
             afficherDetailsEtudiant(user.id);
         });
 
@@ -51,6 +50,27 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
     });
 });
 
+// --- Barre de recherche ---
+document.getElementById("btnSearch").addEventListener("click", () => {
+    const query = document.getElementById("searchEtudiant").value.trim();
+    const url = `${API_URL}/users?page=1&limit=${pageSize}&search=${encodeURIComponent(query)}`;
+    loadEtudiants(url);
+});
+
+document.getElementById("btnReset").addEventListener("click", () => {
+    document.getElementById("searchEtudiant").value = "";
+    loadEtudiants(`${API_URL}/users?page=1&limit=${pageSize}`);
+});
+
+// touche Entrée dans le champ
+document.getElementById("searchEtudiant").addEventListener("keypress", e => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("btnSearch").click();
+    }
+});
+
+
 // --- Nombre d’éléments par page ---
 document.getElementById("nombre").addEventListener("change", e => {
     let limit = parseInt(e.target.value);
@@ -65,54 +85,67 @@ document.getElementById("nombre").addEventListener("change", e => {
 // --- Afficher détails étudiant ---
 async function afficherDetailsEtudiant(id) {
     try {
-        const res = await fetch(`${API_URL}/users/${id}`);
-        if (!res.ok) throw new Error("Utilisateur introuvable");
+        const res = await fetch(`${API_URL}/users/${id}`, {
+            headers: { Accept: "application/json" }
+        });
+
+        if (!res.ok) throw new Error("Étudiant introuvable");
         const etudiant = await res.json();
 
-        // Remplir formulaire Étudiant
+        // ✅ Remplir le formulaire Étudiant
         document.getElementById("prenom").value = etudiant.first_name;
         document.getElementById("nom").value = etudiant.last_name;
         document.getElementById("email").value = etudiant.email;
         document.getElementById("DA").value = etudiant.da || "";
 
-        // Afficher la photo selon l'id
+        //Afficher la photo selon l'id
         const photoEtudiant = document.getElementById("photoEtudiant");
         photoEtudiant.src = `photos/${id}.png`;
         photoEtudiant.onerror = () => { photoEtudiant.src = "photos/0.png"; };
 
-        // Afficher les cours associés
         afficherCoursEtudiant(id);
 
-        // Sélectionner cet étudiant dans le menu Inscriptions
-        const selectEtudiant = document.getElementById("selectEtudiant");
-        selectEtudiant.value = id;
+        console.log(`👤 Étudiant ${id} affiché :`, etudiant);
     } catch (err) {
-        console.error("Erreur lors du chargement des détails étudiant:", err);
+        console.error("Erreur lors du chargement du détail étudiant:", err);
+        alert("Impossible de charger les détails de cet étudiant.");
     }
 }
 
-// --- Charger les cours de l’étudiant sélectionné ---
 async function afficherCoursEtudiant(etudiantId) {
     try {
-        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`);
+        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, {
+            headers: { Accept: "application/json" }
+        });
+        if (!res.ok) throw new Error("Cours introuvables");
+
         const cours = await res.json();
+        console.log("📚 Cours reçus :", cours);
 
         const tbody = document.getElementById("tableCours");
         tbody.innerHTML = "";
+
+        if (cours.length === 0) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td colspan="3" class="text-muted">Aucun cours inscrit.</td>`;
+            tbody.appendChild(tr);
+            return;
+        }
 
         cours.forEach(c => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${c.code}</td>
                 <td>${c.nom}</td>
-                <td><button class="btn btn-outline-danger btn-sm">🗑</button></td>
+                <td>${c.date_inscription ? new Date(c.date_inscription).toLocaleDateString() : ""}</td>
             `;
             tbody.appendChild(tr);
         });
     } catch (err) {
-        console.error("Erreur lors du chargement des cours de l’étudiant:", err);
+        console.error("Erreur afficherCoursEtudiant:", err);
     }
 }
+
 
 // ========================
 // COURS
@@ -148,34 +181,34 @@ async function loadCours() {
 // ========================
 // INSCRIPTIONS
 // ========================
-async function loadInscriptions() {
-    const res = await fetch(`${API_URL}/inscriptions`);
-    const data = await res.json();
-
-    const tbody = document.getElementById("tableInscriptions");
-    tbody.innerHTML = "";
-
-    data.forEach(insc => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${insc.etudiant_nom}</td>
-            <td>${insc.cours_nom}</td>
-            <td>${insc.date}</td>
-            <td><button class="btn btn-outline-danger btn-sm">❌</button></td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    // Mettre à jour la liste déroulante d'étudiants
-    const resEtudiants = await fetch(`${API_URL}/users?page=1&limit=100`);
-    const dataEtud = await resEtudiants.json();
-    const selectEtudiant = document.getElementById("selectEtudiant");
-    selectEtudiant.innerHTML = "";
-    dataEtud.data.forEach(e => {
-        const opt = document.createElement("option");
-        opt.value = e.id;
-        opt.textContent = `${e.first_name} ${e.last_name}`;
-        selectEtudiant.appendChild(opt);
-    });
-}
+// async function loadInscriptions() {
+//     const res = await fetch(`${API_URL}/inscriptions`);
+//     const data = await res.json();
+//
+//     const tbody = document.getElementById("tableInscriptions");
+//     tbody.innerHTML = "";
+//
+//     data.forEach(insc => {
+//         const tr = document.createElement("tr");
+//         tr.innerHTML = `
+//             <td>${insc.etudiant_nom}</td>
+//             <td>${insc.cours_nom}</td>
+//             <td>${insc.date}</td>
+//             <td><button class="btn btn-outline-danger btn-sm">❌</button></td>
+//         `;
+//         tbody.appendChild(tr);
+//     });
+//
+//     // Mettre à jour la liste déroulante d'étudiants
+//     const resEtudiants = await fetch(`${API_URL}/users?page=1&limit=100`);
+//     const dataEtud = await resEtudiants.json();
+//     const selectEtudiant = document.getElementById("selectEtudiant");
+//     selectEtudiant.innerHTML = "";
+//     dataEtud.data.forEach(e => {
+//         const opt = document.createElement("option");
+//         opt.value = e.id;
+//         opt.textContent = `${e.first_name} ${e.last_name}`;
+//         selectEtudiant.appendChild(opt);
+//     });
+// }
 

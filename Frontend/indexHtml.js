@@ -101,7 +101,7 @@ async function afficherDetailsEtudiant(id) {
         //Afficher la photo selon l'id
         const photoEtudiant = document.getElementById("photoEtudiant");
         photoEtudiant.src = `photos/${id}.png`;
-        photoEtudiant.onerror = () => { photoEtudiant.src = "photos/0.jpg"; };
+        photoEtudiant.onerror = () => { photoEtudiant.src = "photos/0.png"; };
 
         afficherCoursEtudiant(id);
 

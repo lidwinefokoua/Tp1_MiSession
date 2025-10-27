@@ -53,9 +53,8 @@
             <div class="card p-3">
                 <h5 class="card-title mb-3">Étudiants</h5>
 
-                <!-- Formulaire Étudiant en haut -->
                 <div class="text-center mb-3">
-                    <img id="photoEtudiant" src="./../photos/0.png" alt="Photo étudiant">
+                    <img id="photoEtudiant" src="photos/1.png" alt="Photo étudiant">
                 </div>
 
                 <form id="formEtudiant">
@@ -84,6 +83,18 @@
                 </form>
 
                 <hr>
+                <!-- Barre de recherche -->
+                <div class="input-group mb-3">
+                    <span class="input-group-text">🔍</span>
+                    <input
+                            type="text"
+                            id="searchEtudiant"
+                            class="form-control form-control-sm"
+                            placeholder="Rechercher par nom, prénom ou DA..."
+                    >
+                    <button class="btn btn-outline-secondary btn-sm" id="btnSearch">Rechercher</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="btnReset">Réinitialiser</button>
+                </div>
 
                 <!-- Tableau des étudiants en dessous -->
                 <div class="table-responsive">
@@ -94,7 +105,7 @@
                             <th>Prénom</th>
                             <th>Courriel</th>
                             <th>DA</th>
-                            <th>Détails</th>
+<!--                            <th>Détails</th>-->
                         </tr>
                         </thead>
                         <tbody id="tableEtudiants">
@@ -173,22 +184,7 @@
             <div class="card p-3">
                 <h5 class="card-title mb-3">Inscriptions</h5>
 
-                <!-- Tableau des inscriptions en haut -->
-                <div class="table-responsive mb-3">
-                    <table class="table table-sm table-hover align-middle">
-                        <thead class="table-light">
-                        <tr>
-                            <th>Étudiant</th>
-                            <th>Cours</th>
-                            <th>Date</th>
-                            <th>Action</th>
-                        </tr>
-                        </thead>
-                        <tbody id="tableInscriptions">
-                        <!-- Dynamique -->
-                        </tbody>
-                    </table>
-                </div>
+
 
                 <!-- Formulaire en dessous -->
                 <form id="formInscription">
@@ -216,6 +212,27 @@
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="indexHtml.js"></script>
+
+<!--<script>-->
+<!--    // ⚡ Affiche automatiquement l'image selon le numéro DA-->
+<!--    const daInput = document.getElementById("DA");-->
+<!--    const photoEtudiant = document.getElementById("photoEtudiant");-->
+
+<!--    daInput.addEventListener("input", () => {-->
+<!--        const da = daInput.value.trim();-->
+<!--        if (da && !isNaN(da)) {-->
+<!--            photoEtudiant.src = `photos/${da}.png`;-->
+<!--        } else {-->
+<!--            photoEtudiant.src = "photos/1.png";-->
+<!--        }-->
+<!--    });-->
+
+<!--    // Image par défaut si non trouvée-->
+<!--    photoEtudiant.onerror = () => {-->
+<!--        photoEtudiant.src = "photos/1.png";-->
+<!--    };-->
+<!--</script>-->
 
 </body>
 </html>

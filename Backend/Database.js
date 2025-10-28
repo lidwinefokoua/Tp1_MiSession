@@ -5,7 +5,7 @@ let options = {
 };
 
 const { Pool } = pg;
-const pool = new Pool(options);
+export const pool = new Pool(options);
 
 
 //Obtenir tous les étudiants (limité à 50)
@@ -306,21 +306,29 @@ export async function addInscription(idEtudiant, idCours) {
 }
 
 
-
-// Supprimer une inscription
-export async function deleteInscription(idInscription) {
+export async function deleteInscription(idEtudiant, idCours) {
     const client = await pool.connect();
     try {
-        const sql = `DELETE FROM s4205se_${process.env.PGUSER}.inscription WHERE id = $1;`;
-        await client.query(sql, [idInscription]);
-        return true;
+
+        const sql = `
+            DELETE FROM s4205se_${process.env.PGUSER}.inscription
+            WHERE etudiant_id = $1 AND cours_id = $2
+                RETURNING *;
+        `;
+        const res = await client.query(sql, [idEtudiant, idCours]);
+
+        console.log("📌 Ligne(s) supprimée(s) →", res.rowCount);
+
+        return res.rowCount > 0;
     } catch (err) {
-        console.error("Erreur deleteInscription:", err);
+        console.error(`❌ ERREUR SQL deleteInscription :`, err);
         return false;
     } finally {
         client.release();
     }
 }
+
+
 
 export async function searchEtudiants(search, limit, offset) {
     const client = await pool.connect();

@@ -285,21 +285,20 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/inscriptions`, {
+
+        const res = await fetch(`${API_URL}/inscriptions/${etudiantId}/${coursId}`, {
             method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ etudiantId, coursId })
+            headers: { Accept: "application/json" }
         });
         if (!res.ok) throw new Error("Erreur de désinscription");
 
         alert("Étudiant désinscrit !");
-        if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
+        if (etudiantId === currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {
         console.error(err);
         alert("Impossible de désinscrire l’étudiant.");
     }
 });
-
 /*****************************************************
  * CHARGEMENT DES COURS POUR LE FORMULAIRE D’INSCRIPTION
  *****************************************************/

@@ -359,3 +359,19 @@ export async function countSearchEtudiants(search) {
         client.release();
     }
 }
+
+// Supprimer une inscription par étudiant et cours
+export async function deleteInscriptionByEtudiantEtCours(etudiantId, coursId) {
+    const client = await pool.connect();
+    try {
+        const sql = `
+      DELETE FROM s4205se_${process.env.PGUSER}.inscription
+      WHERE etudiant_id = $1 AND cours_id = $2
+      RETURNING *;
+    `;
+        const result = await client.query(sql, [etudiantId, coursId]);
+        return result.rowCount > 0;
+    } finally {
+        client.release();
+    }
+}

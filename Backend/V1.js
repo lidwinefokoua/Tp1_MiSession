@@ -52,7 +52,8 @@ router.get("/users", accepts("application/json"), async (req, res) => {
                 first_name: e.prenom,
                 last_name: e.nom,
                 email: e.courriel,
-                da: e.da
+                da: e.da,
+                link: `${req.protocol}://${req.get("host")}/api/v1/users/${e.id}`
             })),
             meta: {
                 page,
@@ -144,45 +145,6 @@ router.post("/courses", accepts("application/json"), async (req, res) => {
     }
 });
 
-// === PUT /api/v1/courses/:id ===
-router.put("/courses/:id", accepts("application/json"), async (req, res) => {
-    console.log("PUT /courses/:id", req.params, req.body);
-    const { id } = req.params;
-    const { code, nom } = req.body;
-
-    const parsedId = parseInt(id, 10);
-    if (isNaN(parsedId)) {
-        return res.status(400).json({ message: "ID invalide" });
-    }
-
-    try {
-        const updated = await updateCours({ id: parsedId, code, nom });
-        if (!updated)
-            return res.status(404).json({ message: "Cours introuvable ou non modifié" });
-        res.json(updated);
-    } catch (err) {
-        console.error("Erreur update cours:", err);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
-});
-
-// === DELETE /api/v1/courses/:id ===
-router.delete("/courses/:id", accepts("application/json"), async (req, res) => {
-    const { id } = req.params;
-    const parsedId = parseInt(id, 10);
-    if (isNaN(parsedId)) {
-        return res.status(400).json({ message: "ID invalide" });
-    }
-
-    try {
-        const success = await deleteCours(parsedId);
-        if (success) res.json({ message: "Cours supprimé" });
-        else res.status(404).json({ message: "Cours introuvable" });
-    } catch (err) {
-        console.error("Erreur suppression cours:", err);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
-});
 
 // === POST /api/v1/inscriptions ===
 router.post("/inscriptions", accepts("application/json"), async (req, res) => {
@@ -208,16 +170,8 @@ router.delete("/inscriptions", accepts("application/json"), async (req, res) => 
         return res.status(400).json({ message: "Étudiant et cours requis" });
 
     try {
-        const sql = `
-            DELETE FROM s4205se_${process.env.PGUSER}.inscription 
-            WHERE etudiant_id = $1 AND cours_id = $2
-            RETURNING *;
-        `;
-        const client = await pool.connect();
-        const result = await client.query(sql, [etudiantId, coursId]);
-        client.release();
-
-        if (result.rowCount === 0)
+        const success = await deleteInscriptionByEtudiantEtCours(etudiantId, coursId);
+        if (!success)
             return res.status(404).json({ message: "Inscription non trouvée" });
 
         res.json({ message: "Inscription supprimée" });

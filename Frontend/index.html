@@ -54,7 +54,7 @@
                 <h5 class="card-title mb-3">Étudiants</h5>
 
                 <div class="text-center mb-3">
-                    <img id="photoEtudiant" src="photos/1.png" alt="Photo étudiant">
+                    <img id="photoEtudiant" src="photos/0.png" alt="Photo étudiant">
                 </div>
 
                 <form id="formEtudiant">
@@ -104,8 +104,6 @@
                             <th>Nom</th>
                             <th>Prénom</th>
                             <th>Courriel</th>
-                            <th>DA</th>
-                            <!--                            <th>Détails</th>-->
                         </tr>
                         </thead>
                         <tbody id="tableEtudiants">
@@ -141,41 +139,24 @@
         <!-- SECTION COURS -->
         <div class="col-lg-4">
             <div class="card p-3">
-                <h5 class="card-title mb-3">Cours</h5>
+                <h5 class="card-title mb-3">Cours de l’étudiant</h5>
 
-                <!-- Tableau des cours en haut -->
+                <!-- Tableau des cours -->
                 <div class="table-responsive mb-3">
                     <table class="table table-sm table-hover align-middle">
                         <thead class="table-light">
                         <tr>
                             <th>Code</th>
                             <th>Nom du cours</th>
+                            <th>Enseignant</th>
                             <th>Date</th>
                         </tr>
                         </thead>
                         <tbody id="tableCours">
-                        <!-- Dynamique -->
+                        <!-- Contenu dynamique -->
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Formulaire des cours en dessous -->
-                <form id="formCours">
-                    <div class="mb-2">
-                        <label class="form-label">Code du cours</label>
-                        <input type="text" id="codeCours" class="form-control form-control-sm">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nom du cours</label>
-                        <input type="text" id="nomCours" class="form-control form-control-sm">
-                    </div>
-
-                    <div class="actions">
-                        <button type="button" class="btn btn-success btn-sm">Ajouter</button>
-                        <button type="button" class="btn btn-primary btn-sm">Modifier</button>
-                        <button type="button" class="btn btn-danger btn-sm">Supprimer</button>
-                    </div>
-                </form>
             </div>
         </div>
 
@@ -183,9 +164,6 @@
         <div class="col-lg-4">
             <div class="card p-3">
                 <h5 class="card-title mb-3">Inscriptions</h5>
-
-
-
                 <!-- Formulaire en dessous -->
                 <form id="formInscription">
                     <label class="form-label">Rechercher un étudiant</label>

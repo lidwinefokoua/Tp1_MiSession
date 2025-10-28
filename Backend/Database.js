@@ -152,53 +152,6 @@ export async function getAllCours(limit, offset = 0) {
 }
 
 
-// Ajouter un cours
-export async function addCours(cours) {
-    const client = await pool.connect();
-    try {
-        // 🔹 Si duree est obligatoire dans ton schéma, mets une valeur par défaut
-        const duree = cours.duree ?? 0;
-        const enseignant = cours.enseignant ?? "Non assigné";
-
-        const sql = `
-            INSERT INTO s4205se_${process.env.PGUSER}.cours (code, nom, duree, enseignant)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *;
-        `;
-        const res = await client.query(sql, [cours.code, cours.nom, duree, enseignant]);
-        return res.rows[0];
-    } catch (err) {
-        console.error("Erreur addCours:", err);
-        return null;
-    } finally {
-        client.release();
-    }
-}
-
-// Modifier un cours
-export async function updateCours(cours) {
-    const client = await pool.connect();
-    try {
-        const id = parseInt(cours.id, 10);
-        if (isNaN(id)) throw new Error("ID du cours invalide");
-
-        const sql = `
-            UPDATE s4205se_${process.env.PGUSER}.cours
-            SET code = COALESCE($1, code),
-                nom = COALESCE($2, nom)
-            WHERE id = $3
-            RETURNING *;
-        `;
-        const res = await client.query(sql, [cours.code, cours.nom, id]);
-        return res.rows[0];
-    } catch (err) {
-        console.error("Erreur updateCours:", err);
-        return null;
-    } finally {
-        client.release();
-    }
-}
-
 // Supprimer un cours
 export async function deleteCours(id) {
     const client = await pool.connect();

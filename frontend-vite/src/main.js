@@ -28,7 +28,6 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
             <td>${user.last_name}</td>
             <td>${user.first_name}</td>
             <td>${user.email}</td>
-            <td>${user.da || ""}</td>
         `;
 
         tr.addEventListener("click", () => afficherDetailsEtudiant(user.id));
@@ -89,25 +88,42 @@ async function afficherDetailsEtudiant(id) {
         const etudiant = await res.json();
         currentEtudiantId = id;
 
+        // ✅ Remplir les champs du formulaire Étudiant
         document.getElementById("prenom").value = etudiant.first_name;
         document.getElementById("nom").value = etudiant.last_name;
         document.getElementById("email").value = etudiant.email;
         document.getElementById("DA").value = etudiant.da || "";
 
+        // ✅ Afficher la photo
         const photo = document.getElementById("photoEtudiant");
         photo.src = `photos/${id}.png`;
         photo.onerror = () => { photo.src = "photos/0.png"; };
 
+        // ✅ Charger les cours de l'étudiant
         afficherCoursEtudiant(id);
+
+        // ✅ Mettre à jour la section Inscriptions
+        const selectEtudiant = document.getElementById("selectEtudiant");
+        selectEtudiant.innerHTML = "";
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = `${etudiant.first_name} ${etudiant.last_name} (${etudiant.da || ""})`;
+        option.selected = true;
+        selectEtudiant.appendChild(option);
+
     } catch (err) {
         console.error(err);
         alert("Impossible de charger les détails de l'étudiant.");
     }
 }
 
+
+/*****************************************************
+ * AFFICHAGE DES COURS D’UN ÉTUDIANT
+ *****************************************************/
 async function afficherCoursEtudiant(etudiantId) {
     const tbody = document.getElementById("tableCours");
-    tbody.innerHTML = `<tr><td colspan="3" class="text-muted">Chargement...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Chargement...</td></tr>`;
 
     try {
         const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, {
@@ -118,112 +134,28 @@ async function afficherCoursEtudiant(etudiantId) {
         const cours = await res.json();
         tbody.innerHTML = "";
 
-        if (cours.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" class="text-muted">Aucun cours inscrit.</td></tr>`;
+        if (!cours || cours.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Aucun cours inscrit pour cet étudiant.</td></tr>`;
             return;
         }
 
         cours.forEach(c => {
             const tr = document.createElement("tr");
-            tr.dataset.id = c.id;
             tr.innerHTML = `
-                <td>${c.code}</td>
-                <td>${c.nom}</td>
-                <td>${c.date_inscription ? new Date(c.date_inscription).toLocaleDateString() : ""}</td>
-            `;
-            tr.addEventListener("click", () => {
-                document.getElementById("codeCours").value = c.code;
-                document.getElementById("nomCours").value = c.nom;
-                document.getElementById("formCours").dataset.currentCoursId = c.id;
-            });
+        <td>${c.code}</td>
+        <td>${c.nom}</td>
+        <td>${c.enseignant || "—"}</td>
+        <td>${c.date_inscription ? new Date(c.date_inscription).toLocaleDateString() : "—"}</td>
+      `;
             tbody.appendChild(tr);
         });
     } catch (err) {
         console.error("Erreur afficherCoursEtudiant:", err);
+        tbody.innerHTML = `<tr><td colspan="4" class="text-danger">Erreur lors du chargement des cours.</td></tr>`;
     }
 }
 
-/*****************************************************
- * FORMULAIRE COURS : Ajouter / Modifier / Retirer
- *****************************************************/
-const formCours = document.getElementById("formCours");
 
-// 🔹 Ajouter un cours
-formCours.querySelector(".btn-success").addEventListener("click", async () => {
-    const code = document.getElementById("codeCours").value.trim();
-    const nom = document.getElementById("nomCours").value.trim();
-    if (!code || !nom) return alert("Remplissez tous les champs.");
-
-    try {
-        const res = await fetch(`${API_URL}/courses`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, nom })
-        });
-        if (!res.ok) throw new Error("Erreur ajout cours");
-
-        alert("Cours ajouté !");
-        document.getElementById("codeCours").value = "";
-        document.getElementById("nomCours").value = "";
-
-        await chargerCoursInscription(); // ✅ met à jour la liste déroulante
-        if (currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId); // ✅ met à jour la table
-    } catch (err) {
-        console.error(err);
-        alert("Impossible d'ajouter le cours.");
-    }
-});
-
-// 🔹 Modifier un cours
-formCours.querySelector(".btn-primary").addEventListener("click", async () => {
-    const id = formCours.dataset.currentCoursId;
-    const code = document.getElementById("codeCours").value.trim();
-    const nom = document.getElementById("nomCours").value.trim();
-    if (!id) return alert("Veuillez sélectionner un cours dans la liste.");
-
-    try {
-        const res = await fetch(`${API_URL}/courses/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, nom })
-        });
-        if (!res.ok) throw new Error("Erreur modification cours");
-
-        alert("Cours modifié !");
-        await chargerCoursInscription();
-        if (currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
-    } catch (err) {
-        console.error(err);
-        alert("Impossible de modifier le cours.");
-    }
-});
-
-// 🔹 Supprimer un cours définitivement
-formCours.querySelector(".btn-danger").addEventListener("click", async () => {
-    const coursId = formCours.dataset.currentCoursId;
-    if (!coursId) return alert("Veuillez sélectionner un cours à supprimer définitivement.");
-    if (!confirm("⚠️ Ceci supprimera le cours de TOUT le système. Continuer ?")) return;
-
-    try {
-        const res = await fetch(`${API_URL}/courses/${coursId}`, {
-            method: "DELETE",
-            headers: { Accept: "application/json" }
-        });
-
-        if (!res.ok) throw new Error("Erreur suppression cours");
-
-        alert("✅ Cours supprimé définitivement !");
-        document.getElementById("codeCours").value = "";
-        document.getElementById("nomCours").value = "";
-        delete formCours.dataset.currentCoursId;
-
-        if (currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
-        await chargerCoursInscription(); // ✅ Mise à jour du formulaire d'inscription
-    } catch (err) {
-        console.error(err);
-        alert("Erreur lors de la suppression du cours.");
-    }
-});
 
 
 /*****************************************************
@@ -285,20 +217,21 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
 
     try {
-
-        const res = await fetch(`${API_URL}/inscriptions/${etudiantId}/${coursId}`, {
+        const res = await fetch(`${API_URL}/inscriptions`, {
             method: "DELETE",
-            headers: { Accept: "application/json" }
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ etudiantId, coursId })
         });
         if (!res.ok) throw new Error("Erreur de désinscription");
 
         alert("Étudiant désinscrit !");
-        if (etudiantId === currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
+        if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {
         console.error(err);
         alert("Impossible de désinscrire l’étudiant.");
     }
 });
+
 /*****************************************************
  * CHARGEMENT DES COURS POUR LE FORMULAIRE D’INSCRIPTION
  *****************************************************/

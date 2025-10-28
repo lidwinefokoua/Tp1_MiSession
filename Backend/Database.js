@@ -5,7 +5,7 @@ let options = {
 };
 
 const { Pool } = pg;
-export const pool = new Pool(options);
+const pool = new Pool(options);
 
 
 //Obtenir tous les étudiants (limité à 50)
@@ -306,6 +306,8 @@ export async function addInscription(idEtudiant, idCours) {
 }
 
 
+
+// Supprimer une inscription
 export async function deleteInscription(idEtudiant, idCours) {
     const client = await pool.connect();
     try {
@@ -317,18 +319,16 @@ export async function deleteInscription(idEtudiant, idCours) {
         `;
         const res = await client.query(sql, [idEtudiant, idCours]);
 
-        console.log("📌 Ligne(s) supprimée(s) →", res.rowCount);
+        console.log("Ligne(s) supprimée(s) →", res.rowCount);
 
         return res.rowCount > 0;
     } catch (err) {
-        console.error(`❌ ERREUR SQL deleteInscription :`, err);
+        console.error(`ERREUR SQL deleteInscription :`, err);
         return false;
     } finally {
         client.release();
     }
 }
-
-
 
 export async function searchEtudiants(search, limit, offset) {
     const client = await pool.connect();
@@ -363,6 +363,22 @@ export async function countSearchEtudiants(search) {
         `;
         const res = await client.query(sql, [pattern]);
         return parseInt(res.rows[0].total);
+    } finally {
+        client.release();
+    }
+}
+
+// Supprimer une inscription par étudiant et cours
+export async function deleteInscriptionByEtudiantEtCours(etudiantId, coursId) {
+    const client = await pool.connect();
+    try {
+        const sql = `
+      DELETE FROM s4205se_${process.env.PGUSER}.inscription
+      WHERE etudiant_id = $1 AND cours_id = $2
+      RETURNING *;
+    `;
+        const result = await client.query(sql, [etudiantId, coursId]);
+        return result.rowCount > 0;
     } finally {
         client.release();
     }

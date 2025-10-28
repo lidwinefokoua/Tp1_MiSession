@@ -1,6 +1,5 @@
 // v1.js
 import express from "express";
-
 import {accepts, baseUrl} from "./route_middlewar.js";
 import {
     getAllEtudiants,
@@ -15,7 +14,7 @@ import {
     updateCours,
     deleteCours,
     addInscription,
-   deleteInscription,
+    deleteInscription,
     searchEtudiants,
     countSearchEtudiants
 } from "./database.js";
@@ -53,7 +52,8 @@ router.get("/users", accepts("application/json"), async (req, res) => {
                 first_name: e.prenom,
                 last_name: e.nom,
                 email: e.courriel,
-                da: e.da
+                da: e.da,
+                link: `${req.protocol}://${req.get("host")}/api/v1/users/${e.id}`
             })),
             meta: {
                 page,
@@ -145,45 +145,6 @@ router.post("/courses", accepts("application/json"), async (req, res) => {
     }
 });
 
-// === PUT /api/v1/courses/:id ===
-router.put("/courses/:id", accepts("application/json"), async (req, res) => {
-    console.log("PUT /courses/:id", req.params, req.body);
-    const { id } = req.params;
-    const { code, nom } = req.body;
-
-    const parsedId = parseInt(id, 10);
-    if (isNaN(parsedId)) {
-        return res.status(400).json({ message: "ID invalide" });
-    }
-
-    try {
-        const updated = await updateCours({ id: parsedId, code, nom });
-        if (!updated)
-            return res.status(404).json({ message: "Cours introuvable ou non modifié" });
-        res.json(updated);
-    } catch (err) {
-        console.error("Erreur update cours:", err);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
-});
-
-// === DELETE /api/v1/courses/:id ===
-router.delete("/courses/:id", accepts("application/json"), async (req, res) => {
-    const { id } = req.params;
-    const parsedId = parseInt(id, 10);
-    if (isNaN(parsedId)) {
-        return res.status(400).json({ message: "ID invalide" });
-    }
-
-    try {
-        const success = await deleteCours(parsedId);
-        if (success) res.json({ message: "Cours supprimé" });
-        else res.status(404).json({ message: "Cours introuvable" });
-    } catch (err) {
-        console.error("Erreur suppression cours:", err);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
-});
 
 // === POST /api/v1/inscriptions ===
 router.post("/inscriptions", accepts("application/json"), async (req, res) => {
@@ -202,6 +163,7 @@ router.post("/inscriptions", accepts("application/json"), async (req, res) => {
     }
 });
 
+// === DELETE /api/v1/inscriptions ===
 router.delete("/inscriptions/:etudiantId/:coursId", accepts("application/json"), async (req, res) => {
     const { etudiantId, coursId } = req.params;
 

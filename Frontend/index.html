@@ -150,7 +150,7 @@
                         <tr>
                             <th>Code</th>
                             <th>Nom du cours</th>
-                            <th>Action</th>
+                            <th>Date</th>
                         </tr>
                         </thead>
                         <tbody id="tableCours">
@@ -188,19 +188,28 @@
 
                 <!-- Formulaire en dessous -->
                 <form id="formInscription">
+                    <label class="form-label">Rechercher un étudiant</label>
+                    <input type="text" id="searchEtudiantInscription"
+                           class="form-control form-control-sm mb-2"
+                           placeholder="Tapez un nom ou DA...">
+
                     <div class="mb-2">
                         <label class="form-label">Étudiant</label>
                         <select id="selectEtudiant" class="form-select form-select-sm"></select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Cours</label>
                         <select id="selectCours" class="form-select form-select-sm"></select>
                     </div>
-                    <button type="button" class="btn btn-success btn-sm mb-3">Inscrire</button>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success btn-sm w-50">Inscrire</button>
+                        <button type="button" class="btn btn-danger btn-sm w-50">Désinscrire</button>
+                    </div>
                 </form>
 
                 <div class="actions">
-                    <button type="button" class="btn btn-danger btn-sm">Désinscrire</button>
                     <a href="#" class="btn btn-outline-secondary btn-sm">Export PDF</a>
                     <a href="#" class="btn btn-outline-secondary btn-sm">Export CSV</a>
                 </div>

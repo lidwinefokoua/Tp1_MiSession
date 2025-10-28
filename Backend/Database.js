@@ -138,7 +138,7 @@ export async function getAllCours(limit, offset = 0) {
         const sql = `
             SELECT id, code, nom, duree, enseignant
             FROM s4205se_${process.env.PGUSER}.cours
-            ORDER BY code ASC;
+            ORDER BY code ASC
             LIMIT $1 OFFSET $2;
         `;
         const res = await client.query(sql,[limit, offset]);
@@ -151,21 +151,21 @@ export async function getAllCours(limit, offset = 0) {
     }
 }
 
-// Ajouter un cours.
+
+// Ajouter un cours
 export async function addCours(cours) {
     const client = await pool.connect();
     try {
+        // 🔹 Si duree est obligatoire dans ton schéma, mets une valeur par défaut
+        const duree = cours.duree ?? 0;
+        const enseignant = cours.enseignant ?? "Non assigné";
+
         const sql = `
             INSERT INTO s4205se_${process.env.PGUSER}.cours (code, nom, duree, enseignant)
             VALUES ($1, $2, $3, $4)
-                RETURNING *;
+            RETURNING *;
         `;
-        const res = await client.query(sql, [
-            cours.code,
-            cours.nom,
-            cours.duree,
-            cours.enseignant
-        ]);
+        const res = await client.query(sql, [cours.code, cours.nom, duree, enseignant]);
         return res.rows[0];
     } catch (err) {
         console.error("Erreur addCours:", err);
@@ -175,6 +175,55 @@ export async function addCours(cours) {
     }
 }
 
+// Modifier un cours
+export async function updateCours(cours) {
+    const client = await pool.connect();
+    try {
+        const id = parseInt(cours.id, 10);
+        if (isNaN(id)) throw new Error("ID du cours invalide");
+
+        const sql = `
+            UPDATE s4205se_${process.env.PGUSER}.cours
+            SET code = COALESCE($1, code),
+                nom = COALESCE($2, nom)
+            WHERE id = $3
+            RETURNING *;
+        `;
+        const res = await client.query(sql, [cours.code, cours.nom, id]);
+        return res.rows[0];
+    } catch (err) {
+        console.error("Erreur updateCours:", err);
+        return null;
+    } finally {
+        client.release();
+    }
+}
+
+// Supprimer un cours
+export async function deleteCours(id) {
+    const client = await pool.connect();
+    try {
+        const parsedId = parseInt(id, 10);
+        if (isNaN(parsedId)) throw new Error("ID invalide");
+
+        await client.query(
+            `DELETE FROM s4205se_${process.env.PGUSER}.inscription WHERE cours_id = $1`,
+            [parsedId]
+        );
+
+        await client.query(
+            `DELETE FROM s4205se_${process.env.PGUSER}.cours WHERE id = $1`,
+            [parsedId]
+        );
+
+        return true;
+    } catch (err) {
+        console.error("Erreur deleteCours:", err);
+        return false;
+    } finally {
+        client.release();
+    }
+}
 
 
 // Récupérer les cours d’un étudiant
@@ -183,7 +232,7 @@ export async function getCoursByEtudiant(idEtudiant) {
     try {
         const sql = `
             SELECT i.id AS id_inscription,
-                   c.id AS id_cours,
+                   c.id AS id,
                    c.code,
                    c.nom AS nom_cours,
                    c.duree,
@@ -205,6 +254,8 @@ export async function getCoursByEtudiant(idEtudiant) {
     }
 }
 
+
+
 // Récupérer les inscriptions d’un étudiant (détails complets)
 export async function getInscriptionsByEtudiant(idEtudiant) {
     const client = await pool.connect();
@@ -213,7 +264,7 @@ export async function getInscriptionsByEtudiant(idEtudiant) {
             SELECT
                 i.id AS id_inscription,
                 i.date_inscription,
-                c.id AS id_cours,
+                c.id AS id,
                 c.code,
                 c.nom AS nom_cours,
                 c.duree,
@@ -253,6 +304,8 @@ export async function addInscription(idEtudiant, idCours) {
         client.release();
     }
 }
+
+
 
 // Supprimer une inscription
 export async function deleteInscription(idInscription) {

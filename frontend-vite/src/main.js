@@ -5,7 +5,7 @@ const API_URL = "/api/v1";
 
 
 let currentPage = 1;
-let pageSize = 50;
+let pageSize = 40;
 let currentEtudiantId = null; // ID de l'étudiant sélectionné
 
 window.onload = () => {

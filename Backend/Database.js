@@ -151,31 +151,6 @@ export async function getAllCours(limit, offset = 0) {
     }
 }
 
-// Ajouter un cours.
-export async function addCours(cours) {
-    const client = await pool.connect();
-    try {
-        const sql = `
-            INSERT INTO s4205se_${process.env.PGUSER}.cours (code, nom, duree, enseignant)
-            VALUES ($1, $2, $3, $4)
-                RETURNING *;
-        `;
-        const res = await client.query(sql, [
-            cours.code,
-            cours.nom,
-            cours.duree,
-            cours.enseignant
-        ]);
-        return res.rows[0];
-    } catch (err) {
-        console.error("Erreur addCours:", err);
-        return null;
-    } finally {
-        client.release();
-    }
-}
-
-
 
 // Récupérer les cours d’un étudiant
 export async function getCoursByEtudiant(idEtudiant) {

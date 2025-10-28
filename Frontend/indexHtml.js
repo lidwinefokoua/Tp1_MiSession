@@ -5,7 +5,7 @@ let pageSize = 50;
 
 window.onload = () => {
     loadEtudiants();
-   //  loadCours();
+    //  loadCours();
     // loadInscriptions();
 };
 
@@ -211,4 +211,3 @@ async function loadCours() {
 //         selectEtudiant.appendChild(opt);
 //     });
 // }
-

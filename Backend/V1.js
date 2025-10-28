@@ -11,6 +11,8 @@ import {
     updateEtudiant,
     deleteEtudiant,
     addCours,
+    updateCours,
+    deleteCours,
     addInscription,
     deleteInscription,
     searchEtudiants,
@@ -100,7 +102,7 @@ router.get("/users/:id/courses", accepts("application/json"), async (req, res) =
         const cours = await getCoursByEtudiant(id);
         res.json(
             cours.map(c => ({
-                id: c.id_cours,
+                id: c.id,
                 code: c.code,
                 nom: c.nom_cours,
                 duree: c.duree,
@@ -113,5 +115,117 @@ router.get("/users/:id/courses", accepts("application/json"), async (req, res) =
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
+
+// Récupérer tous les cours
+router.get("/courses", accepts("application/json"), async (req, res) => {
+    try {
+        const cours = await getAllCours();
+        res.json(cours);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+// === POST /api/v1/courses ===
+router.post("/courses", accepts("application/json"), async (req, res) => {
+    const { code, nom } = req.body;
+
+    if (!code || !nom) {
+        return res.status(400).json({ message: "Code et nom du cours requis" });
+    }
+
+    try {
+        const c = await addCours({ code, nom });
+        res.status(201).json(c);
+    } catch (err) {
+        console.error("Erreur ajout cours:", err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+// === PUT /api/v1/courses/:id ===
+router.put("/courses/:id", accepts("application/json"), async (req, res) => {
+    console.log("PUT /courses/:id", req.params, req.body);
+    const { id } = req.params;
+    const { code, nom } = req.body;
+
+    const parsedId = parseInt(id, 10);
+    if (isNaN(parsedId)) {
+        return res.status(400).json({ message: "ID invalide" });
+    }
+
+    try {
+        const updated = await updateCours({ id: parsedId, code, nom });
+        if (!updated)
+            return res.status(404).json({ message: "Cours introuvable ou non modifié" });
+        res.json(updated);
+    } catch (err) {
+        console.error("Erreur update cours:", err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+// === DELETE /api/v1/courses/:id ===
+router.delete("/courses/:id", accepts("application/json"), async (req, res) => {
+    const { id } = req.params;
+    const parsedId = parseInt(id, 10);
+    if (isNaN(parsedId)) {
+        return res.status(400).json({ message: "ID invalide" });
+    }
+
+    try {
+        const success = await deleteCours(parsedId);
+        if (success) res.json({ message: "Cours supprimé" });
+        else res.status(404).json({ message: "Cours introuvable" });
+    } catch (err) {
+        console.error("Erreur suppression cours:", err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+// === POST /api/v1/inscriptions ===
+router.post("/inscriptions", accepts("application/json"), async (req, res) => {
+    const { etudiantId, coursId } = req.body;
+    if (!etudiantId || !coursId) {
+        return res.status(400).json({ message: "Étudiant et cours requis" });
+    }
+
+    try {
+        const inscription = await addInscription(etudiantId, coursId);
+        if (!inscription) return res.status(500).json({ message: "Erreur ajout inscription" });
+        res.status(201).json(inscription);
+    } catch (err) {
+        console.error("Erreur ajout inscription:", err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+// === DELETE /api/v1/inscriptions ===
+router.delete("/inscriptions", accepts("application/json"), async (req, res) => {
+    const { etudiantId, coursId } = req.body;
+    if (!etudiantId || !coursId)
+        return res.status(400).json({ message: "Étudiant et cours requis" });
+
+    try {
+        const sql = `
+            DELETE FROM s4205se_${process.env.PGUSER}.inscription 
+            WHERE etudiant_id = $1 AND cours_id = $2
+            RETURNING *;
+        `;
+        const client = await pool.connect();
+        const result = await client.query(sql, [etudiantId, coursId]);
+        client.release();
+
+        if (result.rowCount === 0)
+            return res.status(404).json({ message: "Inscription non trouvée" });
+
+        res.json({ message: "Inscription supprimée" });
+    } catch (err) {
+        console.error("Erreur delete inscription:", err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
 
 export default router;

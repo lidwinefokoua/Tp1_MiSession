@@ -16,7 +16,7 @@ export async function getAllEtudiants(limit, offset = 0) {
             SELECT id, nom, prenom, courriel, da
             FROM s4205se_${process.env.PGUSER}.etudiants
             ORDER BY id ASC
-            LIMIT $1 OFFSET $2;
+                LIMIT $1 OFFSET $2;
         `;
         const res = await client.query(sql, [limit, offset]);
         return res.rows;
@@ -97,7 +97,7 @@ export async function updateEtudiant(etudiant) {
                 courriel = $3,
                 da = $4
             WHERE id = $5
-            RETURNING *;
+                RETURNING *;
         `;
         const res = await client.query(sql, [
             etudiant.nom,
@@ -151,6 +151,31 @@ export async function getAllCours(limit, offset = 0) {
     }
 }
 
+// Ajouter un cours.
+export async function addCours(cours) {
+    const client = await pool.connect();
+    try {
+        const sql = `
+            INSERT INTO s4205se_${process.env.PGUSER}.cours (code, nom, duree, enseignant)
+            VALUES ($1, $2, $3, $4)
+                RETURNING *;
+        `;
+        const res = await client.query(sql, [
+            cours.code,
+            cours.nom,
+            cours.duree,
+            cours.enseignant
+        ]);
+        return res.rows[0];
+    } catch (err) {
+        console.error("Erreur addCours:", err);
+        return null;
+    } finally {
+        client.release();
+    }
+}
+
+
 
 // Récupérer les cours d’un étudiant
 export async function getCoursByEtudiant(idEtudiant) {
@@ -185,7 +210,7 @@ export async function getInscriptionsByEtudiant(idEtudiant) {
     const client = await pool.connect();
     try {
         const sql = `
-            SELECT 
+            SELECT
                 i.id AS id_inscription,
                 i.date_inscription,
                 c.id AS id_cours,
@@ -194,8 +219,8 @@ export async function getInscriptionsByEtudiant(idEtudiant) {
                 c.duree,
                 c.enseignant
             FROM s4205se_${process.env.PGUSER}.inscription i
-            JOIN s4205se_${process.env.PGUSER}.cours c
-              ON c.id = i.cours_id
+                     JOIN s4205se_${process.env.PGUSER}.cours c
+                          ON c.id = i.cours_id
             WHERE i.etudiant_id = $1
             ORDER BY i.date_inscription DESC;
         `;
@@ -255,7 +280,7 @@ export async function searchEtudiants(search, limit, offset) {
                OR LOWER(prenom) LIKE LOWER($1)
                OR CAST(da AS TEXT) LIKE $1
             ORDER BY id ASC
-            LIMIT $2 OFFSET $3;
+                LIMIT $2 OFFSET $3;
         `;
         const res = await client.query(sql, [pattern, limit, offset]);
         return res.rows;
@@ -281,4 +306,3 @@ export async function countSearchEtudiants(search) {
         client.release();
     }
 }
-

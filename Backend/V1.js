@@ -10,9 +10,6 @@ import {
     addEtudiant,
     updateEtudiant,
     deleteEtudiant,
-    addCours,
-    updateCours,
-    deleteCours,
     addInscription,
     deleteInscription,
     searchEtudiants,
@@ -96,39 +93,56 @@ router.get("/users/:id", accepts("application/json"), async (req, res) => {
     }
 });
 
+
 // === GET /api/v1/users/:id/courses ===
 router.get("/users/:id/courses", accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;
         const cours = await getCoursByEtudiant(id);
-        res.json(
-            cours.map(c => ({
-                id: c.id,
-                code: c.code,
-                nom: c.nom_cours,
-                duree: c.duree,
-                enseignant: c.enseignant,
-                date_inscription: c.date_inscription
-            }))
-        );
+
+        if (!cours || cours.length === 0) {
+            return res.json([]);
+        }
+
+        // ✅ On ne retourne que les champs visibles dans le frontend
+        const filteredCours = cours.map(c => ({
+            code: c.code,
+            nom: c.nom_cours,
+            enseignant: c.enseignant,
+            date_inscription: c.date_inscription
+        }));
+
+        res.json(filteredCours);
     } catch (err) {
         console.error("Erreur /users/:id/courses :", err);
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
 
-// Récupérer tous les cours
+
+//Récupérer tous les cours
+// === GET /api/v1/courses ===
+// Retourne uniquement id et nom (pour le select d'inscription)
 router.get("/courses", accepts("application/json"), async (req, res) => {
     try {
         const cours = await getAllCours();
-        res.json(cours);
+
+        // ✅ On ne garde que les champs nécessaires pour la liste déroulante
+        const filteredCours = cours.map(c => ({
+            id: c.id,
+            nom: c.nom,
+            code: c.code
+        }));
+
+        res.json(filteredCours);
     } catch (err) {
-        console.error(err);
+        console.error("Erreur /courses :", err);
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
 
-// === POST /api/v1/courses ===
+//
+// // === POST /api/v1/courses ===
 router.post("/courses", accepts("application/json"), async (req, res) => {
     const { code, nom } = req.body;
 

@@ -1,21 +1,21 @@
-// server.js
 import express from "express";
-import v1Router from "./v1.js";
+import cors from "cors";
+import router from "./v1.js";
 
 const app = express();
-const PORT = 3000;
 
+// Active CORS pour toutes les origines (développement)
+app.use(cors());
+
+// 🔹 Middlewares standards
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Version de l’API
-app.use("/api/v1", v1Router);
+// 🔹 Routes
+app.use("/api/v1", router);
 
-// page d’accueil simple
-app.get("/", (req, res) => {
-    res.send("API en ligne sur /api/v1/users");
-});
-
+// 🔹 Démarrage du serveur
+const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Serveur en ligne sur http://localhost:${PORT}/api/v1/users`);
+    console.log(`✅ Serveur en ligne sur http://localhost:${PORT}/api/v1`);
 });

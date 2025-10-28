@@ -164,19 +164,18 @@ router.post("/inscriptions", accepts("application/json"), async (req, res) => {
 });
 
 // === DELETE /api/v1/inscriptions ===
-router.delete("/inscriptions", accepts("application/json"), async (req, res) => {
-    const { etudiantId, coursId } = req.body;
-    if (!etudiantId || !coursId)
-        return res.status(400).json({ message: "Étudiant et cours requis" });
+router.delete("/inscriptions/:etudiantId/:coursId", accepts("application/json"), async (req, res) => {
+    const { etudiantId, coursId } = req.params;
 
     try {
-        const success = await deleteInscriptionByEtudiantEtCours(etudiantId, coursId);
-        if (!success)
+        const deleted = await deleteInscription(etudiantId, coursId);
+
+        if (!deleted) {
             return res.status(404).json({ message: "Inscription non trouvée" });
+        }
 
         res.json({ message: "Inscription supprimée" });
     } catch (err) {
-        console.error("Erreur delete inscription:", err);
         res.status(500).json({ message: "Erreur serveur" });
     }
 });

@@ -1,7 +1,8 @@
 /*****************************************************
  * CONFIGURATION GLOBALE
  *****************************************************/
-const API_URL = "http://localhost:3000/api/v1";
+const API_URL = "/api/v1";
+
 
 let currentPage = 1;
 let pageSize = 50;
@@ -96,8 +97,8 @@ async function afficherDetailsEtudiant(id) {
 
         // ✅ Afficher la photo
         const photo = document.getElementById("photoEtudiant");
-        photo.src = `photos/${id}.png`;
-        photo.onerror = () => { photo.src = "photos/0.png"; };
+        photo.src = `/photos/${id}.png`;
+        photo.onerror = () => { photo.src = "/photos/0.png"; };
 
         // ✅ Charger les cours de l'étudiant
         afficherCoursEtudiant(id);
@@ -217,10 +218,10 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/inscriptions`, {
+
+        const res = await fetch(`${API_URL}/inscriptions/${etudiantId}/${coursId}`, {
             method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ etudiantId, coursId })
+            headers: { Accept: "application/json" }
         });
         if (!res.ok) throw new Error("Erreur de désinscription");
 

@@ -87,48 +87,66 @@ export async function addEtudiant(etudiant) {
 }
 
 // Modifier un étudiant
-export async function updateEtudiant(etudiant) {
-    const client = await pool.connect();
-    try {
-        const sql = `
-            UPDATE s4205se_${process.env.PGUSER}.etudiants
-            SET nom = $1,
-                prenom = $2,
-                courriel = $3,
-                da = $4
-            WHERE id = $5
-                RETURNING *;
-        `;
-        const res = await client.query(sql, [
-            etudiant.nom,
-            etudiant.prenom,
-            etudiant.courriel,
-            etudiant.da,
-            etudiant.id
-        ]);
-        return res.rows[0];
-    } catch (err) {
-        console.error("Erreur updateEtudiant:", err);
-        return null;
-    } finally {
-        client.release();
-    }
-}
+// export async function updateEtudiant(etudiant) {
+//     const client = await pool.connect();
+//     try {
+//         const sql = `
+//             UPDATE s4205se_${process.env.PGUSER}.etudiants
+//             SET nom = $1,
+//                 prenom = $2,
+//                 courriel = $3,
+//                 da = $4
+//             WHERE id = $5
+//                 RETURNING *;
+//         `;
+//         const res = await client.query(sql, [
+//             etudiant.nom,
+//             etudiant.prenom,
+//             etudiant.courriel,
+//             etudiant.da,
+//             etudiant.id
+//         ]);
+//         return res.rows[0];
+//     } catch (err) {
+//         console.error("Erreur updateEtudiant:", err);
+//         return null;
+//     } finally {
+//         client.release();
+//     }
+// }
 
 // Supprimer un étudiant
 export async function deleteEtudiant(id) {
     const client = await pool.connect();
     try {
-        const sql = `DELETE FROM s4205se_${process.env.PGUSER}.etudiants WHERE id = $1;`;
-        await client.query(sql, [id]);
-        return true;
+        await client.query("BEGIN");
+
+        // 1️⃣ Supprimer d'abord les inscriptions liées à cet étudiant
+        await client.query(
+            `DELETE FROM s4205se_${process.env.PGUSER}.inscription WHERE etudiant_id = $1`,
+            [id]
+        );
+
+        // 2️⃣ Supprimer l'étudiant
+        const sql = `
+      DELETE FROM s4205se_${process.env.PGUSER}.etudiants
+      WHERE id = $1
+      RETURNING *;
+    `;
+        const result = await client.query(sql, [id]);
+
+        await client.query("COMMIT");
+        return result.rowCount > 0;
     } catch (err) {
+        await client.query("ROLLBACK");
         console.error("Erreur deleteEtudiant:", err);
         return false;
     } finally {
         client.release();
     }
 }
+
+
 
 
 // Tous les cours
@@ -321,18 +339,22 @@ export async function countSearchEtudiants(search) {
     }
 }
 
-// Supprimer une inscription par étudiant et cours
-export async function deleteInscriptionByEtudiantEtCours(etudiantId, coursId) {
+export async function updateEtudiant(e) {
     const client = await pool.connect();
     try {
         const sql = `
-      DELETE FROM s4205se_${process.env.PGUSER}.inscription
-      WHERE etudiant_id = $1 AND cours_id = $2
-      RETURNING *;
-    `;
-        const result = await client.query(sql, [etudiantId, coursId]);
-        return result.rowCount > 0;
+            UPDATE s4205se_${process.env.PGUSER}.etudiants
+            SET prenom = $1, nom = $2, courriel = $3
+            WHERE id = $4
+                RETURNING *;
+        `;
+        const result = await client.query(sql, [e.prenom, e.nom, e.courriel, e.id]);
+        return result.rows[0];
+    } catch (err) {
+        console.error("Erreur updateEtudiant :", err);
+        return null;
     } finally {
         client.release();
     }
 }
+

@@ -41,6 +41,288 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
     document.getElementById("lastBtn").dataset.url = data.links.last_page || "";
 }
 
+/*****************************************************
+ * VARIABLES ET ÉTATS GLOBAUX
+ *****************************************************/
+const btnAjouter = document.getElementById("btnAjouter");
+const btnModifier = document.getElementById("btnModifier");
+const photoEtudiant = document.getElementById("photoEtudiant");
+
+const inputFile = document.createElement("input");
+inputFile.type = "file";
+inputFile.accept = "image/png";
+
+let modeAjout = false;
+let modeEdition = false;
+let selectedFile = null;
+
+// Modal Bootstrap pour confirmation (modification)
+const modalConfirm = new bootstrap.Modal(document.getElementById("confirmSaveModal"));
+const confirmSaveBtn = document.getElementById("confirmSaveBtn");
+const cancelSaveBtn = document.getElementById("cancelSaveBtn");
+
+
+/*****************************************************
+ * GESTION DES CHAMPS DU FORMULAIRE
+ *****************************************************/
+function resetForm() {
+    document.getElementById("prenom").value = "";
+    document.getElementById("nom").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("DA").value = "";
+}
+
+function toggleForm(disabled = true) {
+    document.getElementById("prenom").disabled = disabled;
+    document.getElementById("nom").disabled = disabled;
+    document.getElementById("email").disabled = disabled;
+    document.getElementById("DA").disabled = disabled;
+}
+
+
+/*****************************************************
+ * GESTION DE LA PHOTO
+ *****************************************************/
+photoEtudiant.addEventListener("click", () => {
+    if (modeAjout || modeEdition) {
+        inputFile.click();
+    }
+});
+
+inputFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === "image/png") {
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = (ev) => (photoEtudiant.src = ev.target.result);
+        reader.readAsDataURL(file);
+    } else {
+        alert("Veuillez choisir un fichier PNG uniquement.");
+        selectedFile = null;
+    }
+});
+
+
+/*****************************************************
+ * AJOUT D’ÉTUDIANT
+ *****************************************************/
+btnAjouter.addEventListener("click", async () => {
+    if (!modeAjout) {
+        // 🔹 Passe en mode AJOUT
+        activerModeAjout();
+    } else {
+        // 🔹 Enregistre le nouvel étudiant
+        await enregistrerNouvelEtudiant();
+    }
+});
+
+function activerModeAjout() {
+    modeAjout = true;
+    btnAjouter.textContent = "Enregistrer";
+    btnModifier.textContent = "Annuler";
+
+    resetForm();
+    toggleForm(false);
+    document.getElementById("DA").disabled = false;
+
+    photoEtudiant.src = "photos/upload.png";
+    photoEtudiant.style.cursor = "pointer";
+    photoEtudiant.title = "Cliquez pour choisir une photo (.png)";
+}
+
+async function enregistrerNouvelEtudiant() {
+    try {
+        const prenom = document.getElementById("prenom").value.trim();
+        const nom = document.getElementById("nom").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const da = document.getElementById("DA").value.trim();
+
+        if (!prenom || !nom || !email || !da) {
+            alert("Veuillez remplir tous les champs.");
+            return;
+        }
+
+        // 🔹 Étape 1 : Ajouter étudiant dans la BD
+        const res = await fetch(`${API_URL}/users`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prenom, nom, email, da })
+        });
+
+        if (!res.ok) throw new Error("Erreur lors de l’ajout de l’étudiant.");
+        const newEtudiant = await res.json();
+
+        // 🔹 Étape 2 : Upload de la photo
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append("photo", selectedFile);
+
+            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, {
+                method: "POST",
+                body: formData
+            });
+
+            if (!uploadRes.ok) throw new Error("Erreur upload photo.");
+        }
+
+        alert("✅ Étudiant ajouté avec succès !");
+        desactiverModeAjout();
+        await loadEtudiants();
+    } catch (err) {
+        console.error("Erreur ajout étudiant:", err);
+        alert("Erreur lors de l’enregistrement de l’étudiant.");
+    }
+}
+
+function desactiverModeAjout() {
+    modeAjout = false;
+    btnAjouter.textContent = "Ajouter";
+    btnModifier.textContent = "Modifier";
+    toggleForm(true);
+    selectedFile = null;
+    photoEtudiant.src = "photos/0.png";
+    photoEtudiant.style.cursor = "default";
+    photoEtudiant.title = "";
+}
+
+
+/*****************************************************
+ * MODIFICATION D’ÉTUDIANT AVEC MODAL
+ *****************************************************/
+btnModifier.addEventListener("click", async () => {
+    if (modeAjout) {
+        // 🔹 Si on est en ajout → annuler
+        desactiverModeAjout();
+        return;
+    }
+
+    if (!currentEtudiantId) {
+        alert("Veuillez d’abord sélectionner un étudiant.");
+        return;
+    }
+
+    if (!modeEdition) {
+        activerModeEdition();
+    } else {
+        modalConfirm.show();
+    }
+});
+
+function activerModeEdition() {
+    modeEdition = true;
+    btnModifier.textContent = "Enregistrer";
+    btnAjouter.textContent = "Annuler";
+    toggleForm(false);
+    document.getElementById("DA").disabled = true;
+
+    photoEtudiant.style.cursor = "pointer";
+    photoEtudiant.title = "Cliquez pour changer la photo";
+}
+
+function desactiverModeEdition() {
+    modeEdition = false;
+    btnModifier.textContent = "Modifier";
+    btnAjouter.textContent = "Ajouter";
+    toggleForm(true);
+
+    photoEtudiant.style.cursor = "default";
+    photoEtudiant.title = "";
+}
+
+// ✅ Confirmation du modal
+confirmSaveBtn.addEventListener("click", async () => {
+    modalConfirm.hide();
+    setTimeout(() => document.activeElement.blur(), 100); // évite le warning aria
+    await enregistrerModificationEtudiant();
+});
+
+// ❌ Annulation du modal
+cancelSaveBtn.addEventListener("click", () => {
+    desactiverModeEdition();
+    if (currentEtudiantId) afficherDetailsEtudiant(currentEtudiantId);
+});
+
+async function enregistrerModificationEtudiant() {
+    try {
+        const prenom = document.getElementById("prenom").value.trim();
+        const nom = document.getElementById("nom").value.trim();
+        const email = document.getElementById("email").value.trim();
+
+        if (!prenom || !nom || !email) {
+            alert("Veuillez remplir tous les champs.");
+            return;
+        }
+
+        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prenom, nom, email })
+        });
+
+        if (!res.ok) throw new Error("Erreur lors de la modification.");
+        const updatedEtudiant = await res.json();
+
+        alert("✅ Étudiant modifié avec succès !");
+        await afficherDetailsEtudiant(updatedEtudiant.id);
+        await loadEtudiants();
+
+        desactiverModeEdition();
+    } catch (err) {
+        console.error("Erreur modification étudiant :", err);
+        alert("Erreur lors de la sauvegarde des modifications.");
+    }
+}
+
+
+/*****************************************************
+ * SUPPRESSION D’ÉTUDIANT AVEC MODAL
+ *****************************************************/
+const btnSupprimer = document.getElementById("btnSupprimer");
+const modalDelete = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+
+btnSupprimer.addEventListener("click", () => {
+    if (!currentEtudiantId) {
+        alert("Veuillez d’abord sélectionner un étudiant à supprimer.");
+        return;
+    }
+    modalDelete.show();
+});
+
+// ✅ Si l’utilisateur confirme la suppression
+confirmDeleteBtn.addEventListener("click", async () => {
+    modalDelete.hide();
+    setTimeout(() => document.activeElement.blur(), 100); // éviter le warning aria
+
+    try {
+        console.log("Suppression :", `${API_URL}/users/${currentEtudiantId}`);
+
+        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
+            method: "DELETE",
+            headers: { Accept: "application/json" }
+        });
+
+        if (!res.ok) throw new Error("Erreur suppression étudiant");
+        const result = await res.json();
+
+        alert("🗑️ Étudiant supprimé avec succès !");
+        resetForm();
+        toggleForm(true);
+        photoEtudiant.src = "photos/0.png";
+        currentEtudiantId = null;
+        await loadEtudiants();
+    } catch (err) {
+        console.error("Erreur suppression étudiant :", err);
+        alert("Erreur lors de la suppression de l’étudiant.");
+    }
+});
+
+// ❌ Si on clique sur “Annuler”
+cancelDeleteBtn.addEventListener("click", () => {
+    modalDelete.hide();
+});
+
 // 🔸 Pagination
 ["firstBtn", "prevBtn", "nextBtn", "lastBtn"].forEach(id => {
     document.getElementById(id).addEventListener("click", e => {

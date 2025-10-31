@@ -15,6 +15,9 @@ import {
     searchEtudiants,
     countSearchEtudiants
 } from "./database.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = express.Router();
 
@@ -66,10 +69,105 @@ router.get("/users", accepts("application/json"), async (req, res) => {
             }
         });
     } catch (err) {
-        console.error("Erreur /users :", err);
-        res.status(500).json({message: "Erreur serveur"});
+        console.error("Erreur /users :", err.stack || err);
+        res.status(500).json({ message: "Erreur serveur", error: err.message });
     }
 
+
+});
+
+router.post("/users", accepts("application/json"), async (req, res) => {
+    try {
+        const { prenom, nom, email, da } = req.body;
+        if (!prenom || !nom || !email || !da) {
+            return res.status(400).json({ message: "Champs obligatoires manquants" });
+        }
+
+        const etudiant = await addEtudiant({
+            prenom,
+            nom,
+            courriel: email,
+            da
+        });
+
+        res.status(201).json(etudiant);
+    } catch (err) {
+        console.error("Erreur ajout étudiant :", err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+// === POST /api/v1/users/:id/photo ===
+// Téléverse une photo PNG dans frontend-vite/public/photos/{id}.png
+
+// 📁 Configuration de multer pour accepter uniquement les PNG
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            // Chemin absolu vers ton dossier de photos dans le frontend
+            const dest = path.resolve("../frontend-vite/public/photos");
+            fs.mkdirSync(dest, { recursive: true }); // crée le dossier s'il n'existe pas
+            cb(null, dest);
+        },
+        filename: (req, file, cb) => {
+            const ext = path.extname(file.originalname).toLowerCase();
+            if (ext !== ".png") {
+                return cb(new Error("Format PNG uniquement"));
+            }
+            cb(null, `${req.params.id}.png`);
+        }
+    }),
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype !== "image/png") {
+            return cb(new Error("Seuls les fichiers PNG sont acceptés"));
+        }
+        cb(null, true);
+    }
+});
+
+// 📸 Route d’upload de photo
+router.post("/users/:id/photo", upload.single("photo"), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "Aucune image reçue" });
+        }
+
+        res.json({
+            message: "✅ Photo téléversée avec succès",
+            file: `${req.params.id}.png`
+        });
+    } catch (err) {
+        console.error("Erreur upload photo :", err);
+        res.status(500).json({ message: "Erreur lors du téléversement de la photo" });
+    }
+});
+
+// === PUT /api/v1/users/:id ===
+router.put("/users/:id", accepts("application/json"), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { prenom, nom, email } = req.body;
+
+        if (!prenom || !nom || !email) {
+            return res.status(400).json({ message: "Champs manquants" });
+        }
+
+        const updated = await updateEtudiant({
+            id,
+            prenom,
+            nom,
+            courriel: email
+        });
+
+        if (!updated) {
+            return res.status(404).json({ message: "Étudiant introuvable" });
+        }
+
+        res.json(updated);
+    } catch (err) {
+        console.error("Erreur PUT /users/:id :", err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
 });
 
 
@@ -104,7 +202,6 @@ router.get("/users/:id/courses", accepts("application/json"), async (req, res) =
             return res.json([]);
         }
 
-        // ✅ On ne retourne que les champs visibles dans le frontend
         const filteredCours = cours.map(c => ({
             code: c.code,
             nom: c.nom_cours,
@@ -193,6 +290,24 @@ router.delete("/inscriptions/:etudiantId/:coursId", accepts("application/json"),
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
+
+// === DELETE /api/v1/users/:id ===
+router.delete("/users/:id", accepts("application/json"), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await deleteEtudiant(id);
+
+        if (!deleted) {
+            return res.status(404).json({ message: "Étudiant introuvable" });
+        }
+
+        res.json({ message: "Étudiant supprimé avec succès" });
+    } catch (err) {
+        console.error("Erreur DELETE /users/:id :", err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
 
 
 export default router;

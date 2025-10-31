@@ -17,5 +17,5 @@ app.use("/api/v1", router);
 // 🔹 Démarrage du serveur
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`✅ Serveur en ligne sur http://localhost:${PORT}/api/v1`);
+    console.log(`Serveur en ligne sur http://localhost:${PORT}/api/v1`);
 });

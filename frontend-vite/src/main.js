@@ -113,7 +113,7 @@ async function afficherDetailsEtudiant(id) {
 
     } catch (err) {
         console.error(err);
-        alert("Impossible de charger les détails de l'étudiant.");
+        showMessage("Impossible de charger les détails de l'étudiant.");
     }
 }
 
@@ -191,7 +191,7 @@ searchInput.addEventListener("input", async () => {
 document.querySelector("#formInscription .btn-success").addEventListener("click", async () => {
     const etudiantId = document.getElementById("selectEtudiant").value;
     const coursId = document.getElementById("selectCours").value;
-    if (!etudiantId || !coursId) return alert("Sélectionnez un étudiant et un cours.");
+    if (!etudiantId || !coursId) return showMessage("Sélectionnez un étudiant et un cours.");
 
     try {
         const res = await fetch(`${API_URL}/inscriptions`, {
@@ -201,11 +201,11 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
         });
         if (!res.ok) throw new Error("Erreur d’inscription");
 
-        alert("Étudiant inscrit !");
+        showMessage("Étudiant inscrit !");
         if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {
         console.error(err);
-        alert("Impossible d’inscrire l’étudiant.");
+        showMessage("Impossible d’inscrire l’étudiant.");
     }
 });
 
@@ -213,22 +213,22 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
 document.querySelector("#formInscription .btn-danger").addEventListener("click", async () => {
     const etudiantId = document.getElementById("selectEtudiant").value;
     const coursId = document.getElementById("selectCours").value;
-    if (!etudiantId || !coursId) return alert("Sélectionnez un étudiant et un cours.");
+    if (!etudiantId || !coursId) return showMessage("Sélectionnez un étudiant et un cours.");
     if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/inscriptions`, {
+        const res = await fetch(`${API_URL}/inscriptions/${etudiantId}/${coursId}`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ etudiantId, coursId })
         });
         if (!res.ok) throw new Error("Erreur de désinscription");
 
-        alert("Étudiant désinscrit !");
+        showMessage("Étudiant désinscrit !");
         if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {
         console.error(err);
-        alert("Impossible de désinscrire l’étudiant.");
+        showMessage("Impossible de désinscrire l’étudiant.");
     }
 });
 
@@ -263,4 +263,16 @@ async function chargerCoursInscription() {
     } catch (err) {
         console.error("Erreur chargerCoursInscription:", err);
     }
+}
+
+function showMessage(text, type = "success") {
+    const box = document.getElementById("messageBox");
+    box.textContent = text;
+    box.className = `message-box ${type}`;
+    box.style.display = "block";
+
+    // Disparition automatique après 4 secondes
+    setTimeout(() => {
+        box.style.display = "none";
+    }, 3000);
 }

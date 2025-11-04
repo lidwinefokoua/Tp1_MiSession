@@ -1,4 +1,7 @@
 import pg from "pg";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
 let options = {
     ssl: { rejectUnauthorized: false }
@@ -86,6 +89,25 @@ export async function addEtudiant(etudiant) {
     }
 }
 
+export async function updateEtudiant(e) {
+    const client = await pool.connect();
+    try {
+        const sql = `
+            UPDATE s4205se_${process.env.PGUSER}.etudiants
+            SET prenom = $1, nom = $2, courriel = $3
+            WHERE id = $4
+                RETURNING *;
+        `;
+        const result = await client.query(sql, [e.prenom, e.nom, e.courriel, e.id]);
+        return result.rows[0];
+    } catch (err) {
+        console.error("Erreur updateEtudiant :", err);
+        return null;
+    } finally {
+        client.release();
+    }
+}
+
 // Modifier un étudiant
 // export async function updateEtudiant(etudiant) {
 //     const client = await pool.connect();
@@ -116,27 +138,48 @@ export async function addEtudiant(etudiant) {
 // }
 
 // Supprimer un étudiant
+
+
 export async function deleteEtudiant(id) {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
 
-        // 1️⃣ Supprimer d'abord les inscriptions liées à cet étudiant
+        // 1️⃣ Supprimer les inscriptions liées
         await client.query(
             `DELETE FROM s4205se_${process.env.PGUSER}.inscription WHERE etudiant_id = $1`,
             [id]
         );
 
-        // 2️⃣ Supprimer l'étudiant
+        // 2️⃣ Supprimer l’étudiant
         const sql = `
-      DELETE FROM s4205se_${process.env.PGUSER}.etudiants
-      WHERE id = $1
-      RETURNING *;
-    `;
+            DELETE FROM s4205se_${process.env.PGUSER}.etudiants
+            WHERE id = $1
+                RETURNING *;
+        `;
         const result = await client.query(sql, [id]);
 
+        if (result.rowCount === 0) {
+            await client.query("ROLLBACK");
+            return false;
+        }
+
+        // 3️⃣ Supprimer la photo correspondante
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+
+        // remonte d’un dossier jusqu’à Backend → ../frontend-vite/public/photos
+        const photoPath = path.join(__dirname, "../frontend-vite/public/photos", `${id}.png`);
+
+        if (fs.existsSync(photoPath)) {
+            fs.unlinkSync(photoPath);
+            console.log(`🗑️ Photo supprimée : ${photoPath}`);
+        } else {
+            console.log(`⚠️ Aucune photo trouvée pour l'étudiant ${id}`);
+        }
+
         await client.query("COMMIT");
-        return result.rowCount > 0;
+        return true;
     } catch (err) {
         await client.query("ROLLBACK");
         console.error("Erreur deleteEtudiant:", err);
@@ -145,6 +188,7 @@ export async function deleteEtudiant(id) {
         client.release();
     }
 }
+
 
 
 
@@ -339,22 +383,5 @@ export async function countSearchEtudiants(search) {
     }
 }
 
-export async function updateEtudiant(e) {
-    const client = await pool.connect();
-    try {
-        const sql = `
-            UPDATE s4205se_${process.env.PGUSER}.etudiants
-            SET prenom = $1, nom = $2, courriel = $3
-            WHERE id = $4
-                RETURNING *;
-        `;
-        const result = await client.query(sql, [e.prenom, e.nom, e.courriel, e.id]);
-        return result.rows[0];
-    } catch (err) {
-        console.error("Erreur updateEtudiant :", err);
-        return null;
-    } finally {
-        client.release();
-    }
-}
+
 

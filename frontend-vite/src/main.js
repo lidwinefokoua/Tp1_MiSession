@@ -371,7 +371,6 @@ async function afficherDetailsEtudiant(id) {
         const etudiant = response.data;
         currentEtudiantId = id;
 
-        // ✅ Remplir les champs du formulaire Étudiant
         document.getElementById("prenom").value = etudiant.prenom || "";
         document.getElementById("nom").value = etudiant.nom || "";
         document.getElementById("email").value = etudiant.courriel || "";

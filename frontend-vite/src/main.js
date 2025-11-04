@@ -25,9 +25,9 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
     data.data.forEach(user => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${user.last_name}</td>
-            <td>${user.first_name}</td>
-            <td>${user.email}</td>
+            <td>${user.nom}</td>
+            <td>${user.prenom}</td>
+            <td>${user.courriel}</td>
         `;
 
         tr.addEventListener("click", () => afficherDetailsEtudiant(user.id));
@@ -367,13 +367,14 @@ async function afficherDetailsEtudiant(id) {
         const res = await fetch(`${API_URL}/users/${id}`, { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error("Étudiant introuvable");
 
-        const etudiant = await res.json();
+        const response = await res.json();
+        const etudiant = response.data;
         currentEtudiantId = id;
 
         // ✅ Remplir les champs du formulaire Étudiant
-        document.getElementById("prenom").value = etudiant.first_name;
-        document.getElementById("nom").value = etudiant.last_name;
-        document.getElementById("email").value = etudiant.email;
+        document.getElementById("prenom").value = etudiant.prenom || "";
+        document.getElementById("nom").value = etudiant.nom || "";
+        document.getElementById("email").value = etudiant.courriel || "";
         document.getElementById("DA").value = etudiant.da || "";
 
         // ✅ Afficher la photo
@@ -382,14 +383,14 @@ async function afficherDetailsEtudiant(id) {
         photo.onerror = () => { photo.src = "photos/0.png"; };
 
         // ✅ Charger les cours de l'étudiant
-        afficherCoursEtudiant(id);
+        await afficherCoursEtudiant(id);
 
         // ✅ Mettre à jour la section Inscriptions
         const selectEtudiant = document.getElementById("selectEtudiant");
         selectEtudiant.innerHTML = "";
         const option = document.createElement("option");
         option.value = id;
-        option.textContent = `${etudiant.first_name} ${etudiant.last_name} (${etudiant.da || ""})`;
+        option.textContent = `${etudiant.prenom} ${etudiant.nom} (${etudiant.da || ""})`;
         option.selected = true;
         selectEtudiant.appendChild(option);
 
@@ -413,10 +414,14 @@ async function afficherCoursEtudiant(etudiantId) {
         });
         if (!res.ok) throw new Error("Cours introuvables");
 
-        const cours = await res.json();
+        const response = await res.json();
+
+        // ✅ Récupère le vrai tableau de cours
+        const cours = Array.isArray(response.data) ? response.data : [];
+
         tbody.innerHTML = "";
 
-        if (!cours || cours.length === 0) {
+        if (cours.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Aucun cours inscrit pour cet étudiant.</td></tr>`;
             return;
         }
@@ -424,11 +429,11 @@ async function afficherCoursEtudiant(etudiantId) {
         cours.forEach(c => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-        <td>${c.code}</td>
-        <td>${c.nom}</td>
-        <td>${c.enseignant || "—"}</td>
-        <td>${c.date_inscription ? new Date(c.date_inscription).toLocaleDateString() : "—"}</td>
-      `;
+                <td>${c.code}</td>
+                <td>${c.nom}</td>
+                <td>${c.enseignant || "—"}</td>
+                <td>${c.date_inscription ? new Date(c.date_inscription).toLocaleDateString() : "—"}</td>
+            `;
             tbody.appendChild(tr);
         });
     } catch (err) {
@@ -464,7 +469,7 @@ searchInput.addEventListener("input", async () => {
     results.forEach(e => {
         const option = document.createElement("option");
         option.value = e.id;
-        option.textContent = `${e.first_name} ${e.last_name} (${e.da})`;
+        option.textContent = `${e.prenom} ${e.nom} (${e.da})`;
         selectEtudiant.appendChild(option);
     });
 });
@@ -481,8 +486,13 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ etudiantId, coursId })
         });
-        if (!res.ok) throw new Error("Erreur d’inscription");
 
+        const data = await res.json();
+        if (!res.ok) {
+            console.warn("Erreur backend:", data);
+            showMessage(data.message || "Erreur d’inscription.", "error");
+            return;
+        }
         showMessage("Étudiant inscrit !");
         if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {

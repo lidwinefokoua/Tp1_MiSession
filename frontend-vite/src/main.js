@@ -276,3 +276,10 @@ function showMessage(text, type = "success") {
         box.style.display = "none";
     }, 3000);
 }
+
+document.getElementById("pdf").addEventListener("click", (e) => {
+    e.preventDefault();
+
+    const pdfUrl = `${API_URL}/users?format=pdf&page=${currentPage}&limit=${pageSize}`;
+    window.open(pdfUrl, "_blank");
+});

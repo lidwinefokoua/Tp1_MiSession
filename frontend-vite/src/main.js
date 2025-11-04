@@ -25,9 +25,9 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
     data.data.forEach(user => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${user.last_name}</td>
-            <td>${user.first_name}</td>
-            <td>${user.email}</td>
+            <td>${user.nom}</td>
+            <td>${user.prenom}</td>
+            <td>${user.courriel}</td>
         `;
 
         tr.addEventListener("click", () => afficherDetailsEtudiant(user.id));
@@ -40,6 +40,288 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
     document.getElementById("nextBtn").dataset.url = data.links.next_page || "";
     document.getElementById("lastBtn").dataset.url = data.links.last_page || "";
 }
+
+/*****************************************************
+ * VARIABLES ET ÉTATS GLOBAUX
+ *****************************************************/
+const btnAjouter = document.getElementById("btnAjouter");
+const btnModifier = document.getElementById("btnModifier");
+const photoEtudiant = document.getElementById("photoEtudiant");
+
+const inputFile = document.createElement("input");
+inputFile.type = "file";
+inputFile.accept = "image/png";
+
+let modeAjout = false;
+let modeEdition = false;
+let selectedFile = null;
+
+// Modal Bootstrap pour confirmation (modification)
+const modalConfirm = new bootstrap.Modal(document.getElementById("confirmSaveModal"));
+const confirmSaveBtn = document.getElementById("confirmSaveBtn");
+const cancelSaveBtn = document.getElementById("cancelSaveBtn");
+
+
+/*****************************************************
+ * GESTION DES CHAMPS DU FORMULAIRE
+ *****************************************************/
+function resetForm() {
+    document.getElementById("prenom").value = "";
+    document.getElementById("nom").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("DA").value = "";
+}
+
+function toggleForm(disabled = true) {
+    document.getElementById("prenom").disabled = disabled;
+    document.getElementById("nom").disabled = disabled;
+    document.getElementById("email").disabled = disabled;
+    document.getElementById("DA").disabled = disabled;
+}
+
+
+/*****************************************************
+ * GESTION DE LA PHOTO
+ *****************************************************/
+photoEtudiant.addEventListener("click", () => {
+    if (modeAjout || modeEdition) {
+        inputFile.click();
+    }
+});
+
+inputFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === "image/png") {
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = (ev) => (photoEtudiant.src = ev.target.result);
+        reader.readAsDataURL(file);
+    } else {
+        alert("Veuillez choisir un fichier PNG uniquement.");
+        selectedFile = null;
+    }
+});
+
+
+/*****************************************************
+ * AJOUT D’ÉTUDIANT
+ *****************************************************/
+btnAjouter.addEventListener("click", async () => {
+    if (!modeAjout) {
+        // 🔹 Passe en mode AJOUT
+        activerModeAjout();
+    } else {
+        // 🔹 Enregistre le nouvel étudiant
+        await enregistrerNouvelEtudiant();
+    }
+});
+
+function activerModeAjout() {
+    modeAjout = true;
+    btnAjouter.textContent = "Enregistrer";
+    btnModifier.textContent = "Annuler";
+
+    resetForm();
+    toggleForm(false);
+    document.getElementById("DA").disabled = false;
+
+    photoEtudiant.src = "photos/upload.png";
+    photoEtudiant.style.cursor = "pointer";
+    photoEtudiant.title = "Cliquez pour choisir une photo (.png)";
+}
+
+async function enregistrerNouvelEtudiant() {
+    try {
+        const prenom = document.getElementById("prenom").value.trim();
+        const nom = document.getElementById("nom").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const da = document.getElementById("DA").value.trim();
+
+        if (!prenom || !nom || !email || !da) {
+            alert("Veuillez remplir tous les champs.");
+            return;
+        }
+
+        // 🔹 Étape 1 : Ajouter étudiant dans la BD
+        const res = await fetch(`${API_URL}/users`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prenom, nom, email, da })
+        });
+
+        if (!res.ok) throw new Error("Erreur lors de l’ajout de l’étudiant.");
+        const newEtudiant = await res.json();
+
+        // 🔹 Étape 2 : Upload de la photo
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append("photo", selectedFile);
+
+            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, {
+                method: "POST",
+                body: formData
+            });
+
+            if (!uploadRes.ok) throw new Error("Erreur upload photo.");
+        }
+
+        alert("✅ Étudiant ajouté avec succès !");
+        desactiverModeAjout();
+        await loadEtudiants();
+    } catch (err) {
+        console.error("Erreur ajout étudiant:", err);
+        alert("Erreur lors de l’enregistrement de l’étudiant.");
+    }
+}
+
+function desactiverModeAjout() {
+    modeAjout = false;
+    btnAjouter.textContent = "Ajouter";
+    btnModifier.textContent = "Modifier";
+    toggleForm(true);
+    selectedFile = null;
+    photoEtudiant.src = "photos/0.png";
+    photoEtudiant.style.cursor = "default";
+    photoEtudiant.title = "";
+}
+
+
+/*****************************************************
+ * MODIFICATION D’ÉTUDIANT AVEC MODAL
+ *****************************************************/
+btnModifier.addEventListener("click", async () => {
+    if (modeAjout) {
+        // 🔹 Si on est en ajout → annuler
+        desactiverModeAjout();
+        return;
+    }
+
+    if (!currentEtudiantId) {
+        alert("Veuillez d’abord sélectionner un étudiant.");
+        return;
+    }
+
+    if (!modeEdition) {
+        activerModeEdition();
+    } else {
+        modalConfirm.show();
+    }
+});
+
+function activerModeEdition() {
+    modeEdition = true;
+    btnModifier.textContent = "Enregistrer";
+    btnAjouter.textContent = "Annuler";
+    toggleForm(false);
+    document.getElementById("DA").disabled = true;
+
+    photoEtudiant.style.cursor = "pointer";
+    photoEtudiant.title = "Cliquez pour changer la photo";
+}
+
+function desactiverModeEdition() {
+    modeEdition = false;
+    btnModifier.textContent = "Modifier";
+    btnAjouter.textContent = "Ajouter";
+    toggleForm(true);
+
+    photoEtudiant.style.cursor = "default";
+    photoEtudiant.title = "";
+}
+
+// ✅ Confirmation du modal
+confirmSaveBtn.addEventListener("click", async () => {
+    modalConfirm.hide();
+    setTimeout(() => document.activeElement.blur(), 100); // évite le warning aria
+    await enregistrerModificationEtudiant();
+});
+
+// ❌ Annulation du modal
+cancelSaveBtn.addEventListener("click", () => {
+    desactiverModeEdition();
+    if (currentEtudiantId) afficherDetailsEtudiant(currentEtudiantId);
+});
+
+async function enregistrerModificationEtudiant() {
+    try {
+        const prenom = document.getElementById("prenom").value.trim();
+        const nom = document.getElementById("nom").value.trim();
+        const email = document.getElementById("email").value.trim();
+
+        if (!prenom || !nom || !email) {
+            alert("Veuillez remplir tous les champs.");
+            return;
+        }
+
+        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prenom, nom, email })
+        });
+
+        if (!res.ok) throw new Error("Erreur lors de la modification.");
+        const updatedEtudiant = await res.json();
+
+        alert("✅ Étudiant modifié avec succès !");
+        await afficherDetailsEtudiant(updatedEtudiant.id);
+        await loadEtudiants();
+
+        desactiverModeEdition();
+    } catch (err) {
+        console.error("Erreur modification étudiant :", err);
+        alert("Erreur lors de la sauvegarde des modifications.");
+    }
+}
+
+
+/*****************************************************
+ * SUPPRESSION D’ÉTUDIANT AVEC MODAL
+ *****************************************************/
+const btnSupprimer = document.getElementById("btnSupprimer");
+const modalDelete = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+
+btnSupprimer.addEventListener("click", () => {
+    if (!currentEtudiantId) {
+        alert("Veuillez d’abord sélectionner un étudiant à supprimer.");
+        return;
+    }
+    modalDelete.show();
+});
+
+// ✅ Si l’utilisateur confirme la suppression
+confirmDeleteBtn.addEventListener("click", async () => {
+    modalDelete.hide();
+    setTimeout(() => document.activeElement.blur(), 100); // éviter le warning aria
+
+    try {
+        console.log("Suppression :", `${API_URL}/users/${currentEtudiantId}`);
+
+        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
+            method: "DELETE",
+            headers: { Accept: "application/json" }
+        });
+
+        if (!res.ok) throw new Error("Erreur suppression étudiant");
+        const result = await res.json();
+
+        alert("🗑️ Étudiant supprimé avec succès !");
+        resetForm();
+        toggleForm(true);
+        photoEtudiant.src = "photos/0.png";
+        currentEtudiantId = null;
+        await loadEtudiants();
+    } catch (err) {
+        console.error("Erreur suppression étudiant :", err);
+        alert("Erreur lors de la suppression de l’étudiant.");
+    }
+});
+
+// ❌ Si on clique sur “Annuler”
+cancelDeleteBtn.addEventListener("click", () => {
+    modalDelete.hide();
+});
 
 // 🔸 Pagination
 ["firstBtn", "prevBtn", "nextBtn", "lastBtn"].forEach(id => {
@@ -85,13 +367,14 @@ async function afficherDetailsEtudiant(id) {
         const res = await fetch(`${API_URL}/users/${id}`, { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error("Étudiant introuvable");
 
-        const etudiant = await res.json();
+        const response = await res.json();
+        const etudiant = response.data;
         currentEtudiantId = id;
 
         // ✅ Remplir les champs du formulaire Étudiant
-        document.getElementById("prenom").value = etudiant.first_name;
-        document.getElementById("nom").value = etudiant.last_name;
-        document.getElementById("email").value = etudiant.email;
+        document.getElementById("prenom").value = etudiant.prenom || "";
+        document.getElementById("nom").value = etudiant.nom || "";
+        document.getElementById("email").value = etudiant.courriel || "";
         document.getElementById("DA").value = etudiant.da || "";
 
         // ✅ Afficher la photo
@@ -100,14 +383,14 @@ async function afficherDetailsEtudiant(id) {
         photo.onerror = () => { photo.src = "photos/0.png"; };
 
         // ✅ Charger les cours de l'étudiant
-        afficherCoursEtudiant(id);
+        await afficherCoursEtudiant(id);
 
         // ✅ Mettre à jour la section Inscriptions
         const selectEtudiant = document.getElementById("selectEtudiant");
         selectEtudiant.innerHTML = "";
         const option = document.createElement("option");
         option.value = id;
-        option.textContent = `${etudiant.first_name} ${etudiant.last_name} (${etudiant.da || ""})`;
+        option.textContent = `${etudiant.prenom} ${etudiant.nom} (${etudiant.da || ""})`;
         option.selected = true;
         selectEtudiant.appendChild(option);
 
@@ -131,10 +414,14 @@ async function afficherCoursEtudiant(etudiantId) {
         });
         if (!res.ok) throw new Error("Cours introuvables");
 
-        const cours = await res.json();
+        const response = await res.json();
+
+        // ✅ Récupère le vrai tableau de cours
+        const cours = Array.isArray(response.data) ? response.data : [];
+
         tbody.innerHTML = "";
 
-        if (!cours || cours.length === 0) {
+        if (cours.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Aucun cours inscrit pour cet étudiant.</td></tr>`;
             return;
         }
@@ -142,11 +429,11 @@ async function afficherCoursEtudiant(etudiantId) {
         cours.forEach(c => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-        <td>${c.code}</td>
-        <td>${c.nom}</td>
-        <td>${c.enseignant || "—"}</td>
-        <td>${c.date_inscription ? new Date(c.date_inscription).toLocaleDateString() : "—"}</td>
-      `;
+                <td>${c.code}</td>
+                <td>${c.nom}</td>
+                <td>${c.enseignant || "—"}</td>
+                <td>${c.date_inscription ? new Date(c.date_inscription).toLocaleDateString() : "—"}</td>
+            `;
             tbody.appendChild(tr);
         });
     } catch (err) {
@@ -182,7 +469,7 @@ searchInput.addEventListener("input", async () => {
     results.forEach(e => {
         const option = document.createElement("option");
         option.value = e.id;
-        option.textContent = `${e.first_name} ${e.last_name} (${e.da})`;
+        option.textContent = `${e.prenom} ${e.nom} (${e.da})`;
         selectEtudiant.appendChild(option);
     });
 });
@@ -199,8 +486,13 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ etudiantId, coursId })
         });
-        if (!res.ok) throw new Error("Erreur d’inscription");
 
+        const data = await res.json();
+        if (!res.ok) {
+            console.warn("Erreur backend:", data);
+            showMessage(data.message || "Erreur d’inscription.", "error");
+            return;
+        }
         showMessage("Étudiant inscrit !");
         if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {

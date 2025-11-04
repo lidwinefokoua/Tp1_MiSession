@@ -18,7 +18,7 @@ export async function getAllEtudiants(limit, offset = 0) {
         const sql = `
             SELECT id, nom, prenom, courriel, da
             FROM s4205se_${process.env.PGUSER}.etudiants
-            ORDER BY id ASC
+            ORDER BY nom ASC
                 LIMIT $1 OFFSET $2;
         `;
         const res = await client.query(sql, [limit, offset]);
@@ -53,7 +53,8 @@ export async function getEtudiantById(id) {
         const sql = `
             SELECT id, nom, prenom, courriel, da
             FROM s4205se_${process.env.PGUSER}.etudiants
-            WHERE id = $1;
+            WHERE id = $1
+            ORDER BY nom ASC;
         `;
         const res = await client.query(sql, [id]);
         return res.rows[0] || null;

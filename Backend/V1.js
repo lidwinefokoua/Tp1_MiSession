@@ -1,6 +1,8 @@
 // v1.js
 import express from "express";
+import { writePdf } from "./writePdf.js";
 import {accepts, baseUrl} from "./route_middlewar.js";
+
 import {
     getAllEtudiants,
     getEtudiantsCount,
@@ -29,35 +31,47 @@ router.use(baseUrl);
 // =======================
 router.get("/users", accepts("application/json"), async (req, res) => {
     try {
-        let { page = 1, limit = 50, search = "" } = req.query;
+        let { page = 1, limit = 10, format } = req.query;
         page = parseInt(page);
-        limit = Math.min(Math.max(parseInt(limit) || 50, 10), 100);
-        const offset = (page - 1) * limit;
+        limit = Math.min(Math.max(parseInt(limit) || 10, 5), 100);
 
-        let etudiants, total;
+        const allEtudiants = await getAllEtudiants(1000, 0);
+        const total = allEtudiants.length;
+        const totalPages = Math.ceil(total / limit);
 
-        if (search.trim() !== "") {
-            etudiants = await searchEtudiants(search, limit, offset);
-            total = await countSearchEtudiants(search);
-        } else {
-            etudiants = await getAllEtudiants(limit, offset);
-            total = await getEtudiantsCount();
+        if (page < 1 || page > totalPages) {
+            return res.status(400).json({ message: "Page invalide" });
         }
 
-        const totalPages = Math.ceil(total / limit);
+        const start = (page - 1) * limit;
+        const pageEtudiants = allEtudiants.slice(start, start + limit);
+
+        if (format === "pdf") {
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Content-Disposition", "attachment; filename=etudiants_page_" + page + ".pdf");
+
+            return writePdf(
+                pageEtudiants.map(e => ({
+                    first_name: e.prenom,
+                    last_name: e.nom,
+                    email: e.courriel
+                })),
+                res
+            );
+        }
 
         if (page > totalPages && totalPages > 0) {
             return res.status(404).json({ message: "Page hors limites" });
         }
 
         res.json({
-            data: etudiants.map(e => ({
+            data: pageEtudiants.map(e => ({
                 id: e.id,
                 prenom: e.prenom,
                 nom: e.nom,
                 courriel: e.courriel,
                 da: e.da,
-                link: `${req.protocol}://${req.get("host")}/api/v1/users/${e.id}`
+                pdf: `${req.protocol}://${req.get("host")}/api/v1/users?format=pdf&page=${page}&limit=${limit}`
             })),
             meta: {
                 page,
@@ -181,6 +195,7 @@ router.put("/users/:id", accepts("application/json"), async (req, res) => {
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
+
 
 
 // === GET /api/v1/users/:id ===

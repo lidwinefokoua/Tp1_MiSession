@@ -31,16 +31,66 @@ router.use(baseUrl);
 // =======================
 router.get("/users", accepts("application/json"), async (req, res) => {
     try {
-        let { page = 1, limit = 10, format } = req.query;
+        let { page = 1, limit = 10, search = "", format } = req.query;
         page = parseInt(page);
-        limit = Math.min(Math.max(parseInt(limit) || 10, 5), 100);
+        limit = parseInt(limit);
+
+        // 🔹 Vérification du paramètre "limit"
+        if (isNaN(limit) || limit < 5) {
+            limit = 5;
+        } else if (limit > 100) {
+            console.warn(`⚠️ Requête avec limit=${limit} tronquée à 100.`);
+            return res.status(400).json({
+                status: 400,
+                message: "La limite maximale d’étudiants par page est 100.",
+                limit_utilisee: 100
+            });
+        }
+
+        // 🔹 Vérification du paramètre "page"
+        if (isNaN(page) || page < 1) {
+            return res.status(400).json({
+                status: 400,
+                message: "Le numéro de page doit être supérieur ou égal à 1."
+            });
+        }
+        if (search && search.trim() !== "") {
+            const total = await countSearchEtudiants(search);
+            const totalPages = Math.ceil(total / limit);
+            const offset = (page - 1) * limit;
+
+            const results = await searchEtudiants(search, limit, offset);
+
+            return res.status(200).json({
+                status: 200,
+                message: "Résultats de la recherche.",
+                data: results.map(e => ({
+                    id: e.id,
+                    prenom: e.prenom,
+                    nom: e.nom,
+                    courriel: e.courriel,
+                    da: e.da
+                })),
+                meta: { page, limit, totalItems: total, totalPages },
+                links: {
+                    first_page: `${req.protocol}://${req.get("host")}/api/v1/users?page=1&limit=${limit}&search=${encodeURIComponent(search)}`,
+                    prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v1/users?page=${page - 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
+                    next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v1/users?page=${page + 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
+                    last_page: `${req.protocol}://${req.get("host")}/api/v1/users?page=${totalPages}&limit=${limit}&search=${encodeURIComponent(search)}`
+                }
+            });
+        }
 
         const allEtudiants = await getAllEtudiants(1000, 0);
-        const total = allEtudiants.length;
+        const total = await getEtudiantsCount();
         const totalPages = Math.ceil(total / limit);
 
-        if (page < 1 || page > totalPages) {
-            return res.status(400).json({ message: "Page invalide" });
+
+        if (totalPages > 0 && page > totalPages) {
+            return res.status(404).json({
+                status: 404,
+                message: `La page ${page} est hors limites. Il n’existe que ${totalPages} page(s).`
+            });
         }
 
         const start = (page - 1) * limit;
@@ -64,7 +114,9 @@ router.get("/users", accepts("application/json"), async (req, res) => {
             return res.status(404).json({ message: "Page hors limites" });
         }
 
-        res.json({
+        return res.status(200).json({
+            status: 200,
+            message: "Liste d’étudiants récupérée avec succès.",
             data: pageEtudiants.map(e => ({
                 id: e.id,
                 prenom: e.prenom,

@@ -10,8 +10,6 @@ let options = {
 const { Pool } = pg;
 const pool = new Pool(options);
 
-
-//Obtenir tous les étudiants (limité à 50)
 export async function getAllEtudiants(limit, offset = 0) {
     const client = await pool.connect();
     try {
@@ -31,7 +29,6 @@ export async function getAllEtudiants(limit, offset = 0) {
     }
 }
 
-// Obtenir le nombre total d'étudiants
 export async function getEtudiantsCount() {
     const client = await pool.connect();
     try {
@@ -46,7 +43,6 @@ export async function getEtudiantsCount() {
     }
 }
 
-// Obtenir un étudiant par ID
 export async function getEtudiantById(id) {
     const client = await pool.connect();
     try {
@@ -66,7 +62,6 @@ export async function getEtudiantById(id) {
     }
 }
 
-// Ajouter un étudiant
 export async function addEtudiant(etudiant) {
     const client = await pool.connect();
     try {
@@ -109,50 +104,16 @@ export async function updateEtudiant(e) {
     }
 }
 
-// Modifier un étudiant
-// export async function updateEtudiant(etudiant) {
-//     const client = await pool.connect();
-//     try {
-//         const sql = `
-//             UPDATE s4205se_${process.env.PGUSER}.etudiants
-//             SET nom = $1,
-//                 prenom = $2,
-//                 courriel = $3,
-//                 da = $4
-//             WHERE id = $5
-//                 RETURNING *;
-//         `;
-//         const res = await client.query(sql, [
-//             etudiant.nom,
-//             etudiant.prenom,
-//             etudiant.courriel,
-//             etudiant.da,
-//             etudiant.id
-//         ]);
-//         return res.rows[0];
-//     } catch (err) {
-//         console.error("Erreur updateEtudiant:", err);
-//         return null;
-//     } finally {
-//         client.release();
-//     }
-// }
-
-// Supprimer un étudiant
-
-
 export async function deleteEtudiant(id) {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
 
-        // 1️⃣ Supprimer les inscriptions liées
         await client.query(
             `DELETE FROM s4205se_${process.env.PGUSER}.inscription WHERE etudiant_id = $1`,
             [id]
         );
 
-        // 2️⃣ Supprimer l’étudiant
         const sql = `
             DELETE FROM s4205se_${process.env.PGUSER}.etudiants
             WHERE id = $1
@@ -165,18 +126,17 @@ export async function deleteEtudiant(id) {
             return false;
         }
 
-        // 3️⃣ Supprimer la photo correspondante
+        //Supprimer la photo correspondante
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
 
-        // remonte d’un dossier jusqu’à Backend → ../frontend-vite/public/photos
         const photoPath = path.join(__dirname, "../frontend-vite/public/photos", `${id}.png`);
 
         if (fs.existsSync(photoPath)) {
             fs.unlinkSync(photoPath);
-            console.log(`🗑️ Photo supprimée : ${photoPath}`);
+            console.log(`Photo supprimée : ${photoPath}`);
         } else {
-            console.log(`⚠️ Aucune photo trouvée pour l'étudiant ${id}`);
+            console.log(`Aucune photo trouvée pour l'étudiant ${id}`);
         }
 
         await client.query("COMMIT");
@@ -190,11 +150,6 @@ export async function deleteEtudiant(id) {
     }
 }
 
-
-
-
-
-// Tous les cours
 export async function getAllCours(limit, offset = 0) {
     const client = await pool.connect();
     try {
@@ -214,35 +169,6 @@ export async function getAllCours(limit, offset = 0) {
     }
 }
 
-
-// Supprimer un cours
-export async function deleteCours(id) {
-    const client = await pool.connect();
-    try {
-        const parsedId = parseInt(id, 10);
-        if (isNaN(parsedId)) throw new Error("ID invalide");
-
-        await client.query(
-            `DELETE FROM s4205se_${process.env.PGUSER}.inscription WHERE cours_id = $1`,
-            [parsedId]
-        );
-
-        await client.query(
-            `DELETE FROM s4205se_${process.env.PGUSER}.cours WHERE id = $1`,
-            [parsedId]
-        );
-
-        return true;
-    } catch (err) {
-        console.error("Erreur deleteCours:", err);
-        return false;
-    } finally {
-        client.release();
-    }
-}
-
-
-// Récupérer les cours d’un étudiant
 export async function getCoursByEtudiant(idEtudiant) {
     const client = await pool.connect();
     try {
@@ -270,9 +196,6 @@ export async function getCoursByEtudiant(idEtudiant) {
     }
 }
 
-
-
-// Récupérer les inscriptions d’un étudiant (détails complets)
 export async function getInscriptionsByEtudiant(idEtudiant) {
     const client = await pool.connect();
     try {
@@ -301,8 +224,6 @@ export async function getInscriptionsByEtudiant(idEtudiant) {
     }
 }
 
-
-// Inscrire un étudiant à un cours
 export async function addInscription(idEtudiant, idCours) {
     const client = await pool.connect();
     try {
@@ -321,9 +242,6 @@ export async function addInscription(idEtudiant, idCours) {
     }
 }
 
-
-
-// Supprimer une inscription
 export async function deleteInscription(idEtudiant, idCours) {
     const client = await pool.connect();
     try {

@@ -5,7 +5,7 @@ const API_URL = "http://localhost:3000/api/v1";
 
 let currentPage = 1;
 let pageSize = 50;
-let currentEtudiantId = null; // ID de l'étudiant sélectionné
+let currentEtudiantId = null; // ID de l’étudiant sélectionné
 
 window.onload = () => {
     loadEtudiants();
@@ -13,7 +13,32 @@ window.onload = () => {
 };
 
 /*****************************************************
- * SECTION ÉTUDIANTS
+ * VARIABLES ET ÉTATS GLOBAUX
+ *****************************************************/
+const btnAjouter = document.getElementById("btnAjouter");
+const btnModifier = document.getElementById("btnModifier");
+const btnSupprimer = document.getElementById("btnSupprimer");
+const photoEtudiant = document.getElementById("photoEtudiant");
+
+const inputFile = document.createElement("input");
+inputFile.type = "file";
+inputFile.accept = "image/png";
+
+let modeAjout = false;
+let modeEdition = false;
+let selectedFile = null;
+
+// Modaux Bootstrap
+const modalConfirm = new bootstrap.Modal(document.getElementById("confirmSaveModal"));
+const confirmSaveBtn = document.getElementById("confirmSaveBtn");
+const cancelSaveBtn = document.getElementById("cancelSaveBtn");
+
+const modalDelete = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+
+/*****************************************************
+ * SECTION ÉTUDIANTS — Liste et Pagination
  *****************************************************/
 async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=${pageSize}`) {
     const res = await fetch(url, { headers: { Accept: "application/json" } });
@@ -29,7 +54,6 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
             <td>${user.prenom}</td>
             <td>${user.courriel}</td>
         `;
-
         tr.addEventListener("click", () => afficherDetailsEtudiant(user.id));
         tbody.appendChild(tr);
     });
@@ -42,28 +66,7 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
 }
 
 /*****************************************************
- * VARIABLES ET ÉTATS GLOBAUX
- *****************************************************/
-const btnAjouter = document.getElementById("btnAjouter");
-const btnModifier = document.getElementById("btnModifier");
-const photoEtudiant = document.getElementById("photoEtudiant");
-
-const inputFile = document.createElement("input");
-inputFile.type = "file";
-inputFile.accept = "image/png";
-
-let modeAjout = false;
-let modeEdition = false;
-let selectedFile = null;
-
-// Modal Bootstrap pour confirmation (modification)
-const modalConfirm = new bootstrap.Modal(document.getElementById("confirmSaveModal"));
-const confirmSaveBtn = document.getElementById("confirmSaveBtn");
-const cancelSaveBtn = document.getElementById("cancelSaveBtn");
-
-
-/*****************************************************
- * GESTION DES CHAMPS DU FORMULAIRE
+ *FORMULAIRE — Gestion des champs
  *****************************************************/
 function resetForm() {
     document.getElementById("prenom").value = "";
@@ -79,14 +82,11 @@ function toggleForm(disabled = true) {
     document.getElementById("DA").disabled = disabled;
 }
 
-
 /*****************************************************
- * GESTION DE LA PHOTO
+ *GESTION DE LA PHOTO
  *****************************************************/
 photoEtudiant.addEventListener("click", () => {
-    if (modeAjout || modeEdition) {
-        inputFile.click();
-    }
+    if (modeAjout || modeEdition) inputFile.click();
 });
 
 inputFile.addEventListener("change", (e) => {
@@ -102,25 +102,18 @@ inputFile.addEventListener("change", (e) => {
     }
 });
 
-
 /*****************************************************
  * AJOUT D’ÉTUDIANT
  *****************************************************/
 btnAjouter.addEventListener("click", async () => {
-    if (!modeAjout) {
-        // 🔹 Passe en mode AJOUT
-        activerModeAjout();
-    } else {
-        // 🔹 Enregistre le nouvel étudiant
-        await enregistrerNouvelEtudiant();
-    }
+    if (!modeAjout) activerModeAjout();
+    else await enregistrerNouvelEtudiant();
 });
 
 function activerModeAjout() {
     modeAjout = true;
     btnAjouter.textContent = "Enregistrer";
     btnModifier.textContent = "Annuler";
-
     resetForm();
     toggleForm(false);
     document.getElementById("DA").disabled = false;
@@ -137,35 +130,27 @@ async function enregistrerNouvelEtudiant() {
         const email = document.getElementById("email").value.trim();
         const da = document.getElementById("DA").value.trim();
 
-        if (!prenom || !nom || !email || !da) {
-            alert("Veuillez remplir tous les champs.");
-            return;
-        }
+        if (!prenom || !nom || !email || !da) return alert("Veuillez remplir tous les champs.");
 
-        // 🔹 Étape 1 : Ajouter étudiant dans la BD
+        // Étape 1 : ajout BD
         const res = await fetch(`${API_URL}/users`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prenom, nom, email, da })
         });
+        if (!res.ok) throw new Error("Erreur ajout étudiant");
 
-        if (!res.ok) throw new Error("Erreur lors de l’ajout de l’étudiant.");
         const newEtudiant = await res.json();
 
-        // 🔹 Étape 2 : Upload de la photo
+        // Étape 2 : upload photo
         if (selectedFile) {
             const formData = new FormData();
             formData.append("photo", selectedFile);
-
-            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, {
-                method: "POST",
-                body: formData
-            });
-
-            if (!uploadRes.ok) throw new Error("Erreur upload photo.");
+            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, { method: "POST", body: formData });
+            if (!uploadRes.ok) throw new Error("Erreur upload photo");
         }
 
-        alert("✅ Étudiant ajouté avec succès !");
+        alert("Étudiant ajouté avec succès !");
         desactiverModeAjout();
         await loadEtudiants();
     } catch (err) {
@@ -185,27 +170,15 @@ function desactiverModeAjout() {
     photoEtudiant.title = "";
 }
 
-
 /*****************************************************
- * MODIFICATION D’ÉTUDIANT AVEC MODAL
+ * MODIFICATION D’ÉTUDIANT
  *****************************************************/
 btnModifier.addEventListener("click", async () => {
-    if (modeAjout) {
-        // 🔹 Si on est en ajout → annuler
-        desactiverModeAjout();
-        return;
-    }
+    if (modeAjout) return desactiverModeAjout();
+    if (!currentEtudiantId) return alert("Veuillez d’abord sélectionner un étudiant.");
 
-    if (!currentEtudiantId) {
-        alert("Veuillez d’abord sélectionner un étudiant.");
-        return;
-    }
-
-    if (!modeEdition) {
-        activerModeEdition();
-    } else {
-        modalConfirm.show();
-    }
+    if (!modeEdition) activerModeEdition();
+    else modalConfirm.show();
 });
 
 function activerModeEdition() {
@@ -214,7 +187,6 @@ function activerModeEdition() {
     btnAjouter.textContent = "Annuler";
     toggleForm(false);
     document.getElementById("DA").disabled = true;
-
     photoEtudiant.style.cursor = "pointer";
     photoEtudiant.title = "Cliquez pour changer la photo";
 }
@@ -224,19 +196,17 @@ function desactiverModeEdition() {
     btnModifier.textContent = "Modifier";
     btnAjouter.textContent = "Ajouter";
     toggleForm(true);
-
     photoEtudiant.style.cursor = "default";
     photoEtudiant.title = "";
 }
 
-// ✅ Confirmation du modal
+// Modal de confirmation
 confirmSaveBtn.addEventListener("click", async () => {
     modalConfirm.hide();
-    setTimeout(() => document.activeElement.blur(), 100); // évite le warning aria
+    setTimeout(() => document.activeElement.blur(), 100);
     await enregistrerModificationEtudiant();
 });
 
-// ❌ Annulation du modal
 cancelSaveBtn.addEventListener("click", () => {
     desactiverModeEdition();
     if (currentEtudiantId) afficherDetailsEtudiant(currentEtudiantId);
@@ -247,11 +217,7 @@ async function enregistrerModificationEtudiant() {
         const prenom = document.getElementById("prenom").value.trim();
         const nom = document.getElementById("nom").value.trim();
         const email = document.getElementById("email").value.trim();
-
-        if (!prenom || !nom || !email) {
-            alert("Veuillez remplir tous les champs.");
-            return;
-        }
+        if (!prenom || !nom || !email) return alert("Veuillez remplir tous les champs.");
 
         const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
             method: "PUT",
@@ -259,54 +225,36 @@ async function enregistrerModificationEtudiant() {
             body: JSON.stringify({ prenom, nom, email })
         });
 
-        if (!res.ok) throw new Error("Erreur lors de la modification.");
-        const updatedEtudiant = await res.json();
+        if (!res.ok) throw new Error("Erreur modification");
+        const updated = await res.json();
 
-        alert("✅ Étudiant modifié avec succès !");
-        await afficherDetailsEtudiant(updatedEtudiant.id);
+        alert("Étudiant modifié !");
+        await afficherDetailsEtudiant(updated.id);
         await loadEtudiants();
-
         desactiverModeEdition();
     } catch (err) {
         console.error("Erreur modification étudiant :", err);
-        alert("Erreur lors de la sauvegarde des modifications.");
+        alert("Erreur lors de la sauvegarde.");
     }
 }
 
-
 /*****************************************************
- * SUPPRESSION D’ÉTUDIANT AVEC MODAL
+ * SUPPRESSION D’ÉTUDIANT
  *****************************************************/
-const btnSupprimer = document.getElementById("btnSupprimer");
-const modalDelete = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
-const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
-
 btnSupprimer.addEventListener("click", () => {
-    if (!currentEtudiantId) {
-        alert("Veuillez d’abord sélectionner un étudiant à supprimer.");
-        return;
-    }
+    if (!currentEtudiantId) return alert("Veuillez d’abord sélectionner un étudiant à supprimer.");
     modalDelete.show();
 });
 
-// ✅ Si l’utilisateur confirme la suppression
 confirmDeleteBtn.addEventListener("click", async () => {
     modalDelete.hide();
-    setTimeout(() => document.activeElement.blur(), 100); // éviter le warning aria
+    setTimeout(() => document.activeElement.blur(), 100);
 
     try {
-        console.log("Suppression :", `${API_URL}/users/${currentEtudiantId}`);
-
-        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
-            method: "DELETE",
-            headers: { Accept: "application/json" }
-        });
-
+        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Erreur suppression étudiant");
-        const result = await res.json();
 
-        alert("🗑️ Étudiant supprimé avec succès !");
+        alert("🗑️ Étudiant supprimé !");
         resetForm();
         toggleForm(true);
         photoEtudiant.src = "photos/0.png";
@@ -314,16 +262,15 @@ confirmDeleteBtn.addEventListener("click", async () => {
         await loadEtudiants();
     } catch (err) {
         console.error("Erreur suppression étudiant :", err);
-        alert("Erreur lors de la suppression de l’étudiant.");
+        alert("Erreur lors de la suppression.");
     }
 });
 
-// ❌ Si on clique sur “Annuler”
-cancelDeleteBtn.addEventListener("click", () => {
-    modalDelete.hide();
-});
+cancelDeleteBtn.addEventListener("click", () => modalDelete.hide());
 
-// 🔸 Pagination
+/*****************************************************
+ *RECHERCHE, PAGINATION, NOMBRE PAR PAGE
+ *****************************************************/
 ["firstBtn", "prevBtn", "nextBtn", "lastBtn"].forEach(id => {
     document.getElementById(id).addEventListener("click", e => {
         const url = e.target.dataset.url;
@@ -331,7 +278,6 @@ cancelDeleteBtn.addEventListener("click", () => {
     });
 });
 
-// 🔸 Recherche
 document.getElementById("btnSearch").addEventListener("click", () => {
     const query = document.getElementById("searchEtudiant").value.trim();
     const url = `${API_URL}/users?page=1&limit=${pageSize}&search=${encodeURIComponent(query)}`;
@@ -343,7 +289,6 @@ document.getElementById("btnReset").addEventListener("click", () => {
     loadEtudiants(`${API_URL}/users?page=1&limit=${pageSize}`);
 });
 
-// Entrée clavier
 document.getElementById("searchEtudiant").addEventListener("keypress", e => {
     if (e.key === "Enter") {
         e.preventDefault();
@@ -351,7 +296,6 @@ document.getElementById("searchEtudiant").addEventListener("keypress", e => {
     }
 });
 
-// 🔸 Sélection du nombre d'éléments par page
 document.getElementById("nombre").addEventListener("change", e => {
     let limit = parseInt(e.target.value);
     limit = Math.min(Math.max(limit, 10), 100);
@@ -360,7 +304,7 @@ document.getElementById("nombre").addEventListener("change", e => {
 });
 
 /*****************************************************
- * AFFICHAGE DÉTAILS + COURS D’UN ÉTUDIANT
+ *AFFICHAGE DÉTAILS + COURS ÉTUDIANT
  *****************************************************/
 async function afficherDetailsEtudiant(id) {
     try {
@@ -368,60 +312,48 @@ async function afficherDetailsEtudiant(id) {
         if (!res.ok) throw new Error("Étudiant introuvable");
 
         const response = await res.json();
-        const etudiant = response.data;
+        const e = response.data;
         currentEtudiantId = id;
 
-        document.getElementById("prenom").value = etudiant.prenom || "";
-        document.getElementById("nom").value = etudiant.nom || "";
-        document.getElementById("email").value = etudiant.courriel || "";
-        document.getElementById("DA").value = etudiant.da || "";
+        document.getElementById("prenom").value = e.prenom || "";
+        document.getElementById("nom").value = e.nom || "";
+        document.getElementById("email").value = e.courriel || "";
+        document.getElementById("DA").value = e.da || "";
 
-        // ✅ Afficher la photo
         const photo = document.getElementById("photoEtudiant");
         photo.src = `photos/${id}.png`;
         photo.onerror = () => { photo.src = "photos/0.png"; };
 
-        // ✅ Charger les cours de l'étudiant
         await afficherCoursEtudiant(id);
 
-        // ✅ Mettre à jour la section Inscriptions
         const selectEtudiant = document.getElementById("selectEtudiant");
         selectEtudiant.innerHTML = "";
         const option = document.createElement("option");
         option.value = id;
-        option.textContent = `${etudiant.prenom} ${etudiant.nom} (${etudiant.da || ""})`;
+        option.textContent = `${e.prenom} ${e.nom} (${e.da || ""})`;
         option.selected = true;
         selectEtudiant.appendChild(option);
-
     } catch (err) {
         console.error(err);
         showMessage("Impossible de charger les détails de l'étudiant.");
     }
 }
 
-
 /*****************************************************
- * AFFICHAGE DES COURS D’UN ÉTUDIANT
+ *AFFICHAGE DES COURS D’UN ÉTUDIANT
  *****************************************************/
 async function afficherCoursEtudiant(etudiantId) {
     const tbody = document.getElementById("tableCours");
     tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Chargement...</td></tr>`;
 
     try {
-        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, {
-            headers: { Accept: "application/json" }
-        });
-        if (!res.ok) throw new Error("Cours introuvables");
-
+        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, { headers: { Accept: "application/json" } });
         const response = await res.json();
-
-        // ✅ Récupère le vrai tableau de cours
         const cours = Array.isArray(response.data) ? response.data : [];
-
         tbody.innerHTML = "";
 
         if (cours.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Aucun cours inscrit pour cet étudiant.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Aucun cours inscrit.</td></tr>`;
             return;
         }
 
@@ -437,20 +369,15 @@ async function afficherCoursEtudiant(etudiantId) {
         });
     } catch (err) {
         console.error("Erreur afficherCoursEtudiant:", err);
-        tbody.innerHTML = `<tr><td colspan="4" class="text-danger">Erreur lors du chargement des cours.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-danger">Erreur lors du chargement.</td></tr>`;
     }
 }
 
-
-
-
 /*****************************************************
- * FORMULAIRE INSCRIPTION : Recherche / Inscrire / Désinscrire
+ * FORMULAIRE D’INSCRIPTION — Recherche / Ajouter / Supprimer
  *****************************************************/
 async function rechercherEtudiants(term) {
-    const res = await fetch(`${API_URL}/users?search=${encodeURIComponent(term)}`, {
-        headers: { Accept: "application/json" }
-    });
+    const res = await fetch(`${API_URL}/users?search=${encodeURIComponent(term)}`, { headers: { Accept: "application/json" } });
     const data = await res.json();
     return data.data;
 }
@@ -461,10 +388,8 @@ const selectEtudiant = document.getElementById("selectEtudiant");
 searchInput.addEventListener("input", async () => {
     const term = searchInput.value.trim();
     if (term.length < 2) return;
-
     const results = await rechercherEtudiants(term);
     selectEtudiant.innerHTML = "";
-
     results.forEach(e => {
         const option = document.createElement("option");
         option.value = e.id;
@@ -473,7 +398,7 @@ searchInput.addEventListener("input", async () => {
     });
 });
 
-// 🔹 Inscrire un étudiant
+// Inscrire
 document.querySelector("#formInscription .btn-success").addEventListener("click", async () => {
     const etudiantId = document.getElementById("selectEtudiant").value;
     const coursId = document.getElementById("selectCours").value;
@@ -485,13 +410,9 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ etudiantId, coursId })
         });
-
         const data = await res.json();
-        if (!res.ok) {
-            console.warn("Erreur backend:", data);
-            showMessage(data.message || "Erreur d’inscription.", "error");
-            return;
-        }
+
+        if (!res.ok) return showMessage(data.message || "Erreur d’inscription.", "error");
         showMessage("Étudiant inscrit !");
         if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {
@@ -500,7 +421,7 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
     }
 });
 
-// 🔹 Désinscrire un étudiant
+// Désinscrire
 document.querySelector("#formInscription .btn-danger").addEventListener("click", async () => {
     const etudiantId = document.getElementById("selectEtudiant").value;
     const coursId = document.getElementById("selectCours").value;
@@ -508,13 +429,8 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/inscriptions/${etudiantId}/${coursId}`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ etudiantId, coursId })
-        });
-        if (!res.ok) throw new Error("Erreur de désinscription");
-
+        const res = await fetch(`${API_URL}/inscriptions/${etudiantId}/${coursId}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Erreur désinscription");
         showMessage("Étudiant désinscrit !");
         if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {
@@ -524,13 +440,11 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
 });
 
 /*****************************************************
- * CHARGEMENT DES COURS POUR LE FORMULAIRE D’INSCRIPTION
+ * CHARGEMENT DES COURS DISPONIBLES
  *****************************************************/
 async function chargerCoursInscription() {
     try {
         const res = await fetch(`${API_URL}/courses`, { headers: { Accept: "application/json" } });
-        if (!res.ok) throw new Error("Erreur chargement cours");
-
         const data = await res.json();
         const cours = Array.isArray(data) ? data : data.data;
 
@@ -556,21 +470,22 @@ async function chargerCoursInscription() {
     }
 }
 
+/*****************************************************
+ * UTILITAIRE : Message d’information
+ *****************************************************/
 function showMessage(text, type = "success") {
     const box = document.getElementById("messageBox");
     box.textContent = text;
     box.className = `message-box ${type}`;
     box.style.display = "block";
-
-    // Disparition automatique après 4 secondes
-    setTimeout(() => {
-        box.style.display = "none";
-    }, 3000);
+    setTimeout(() => { box.style.display = "none"; }, 3000);
 }
 
+/*****************************************************
+ *EXPORT PDF
+ *****************************************************/
 document.getElementById("pdf").addEventListener("click", (e) => {
     e.preventDefault();
-
     const pdfUrl = `${API_URL}/users?format=pdf&page=${currentPage}&limit=${pageSize}`;
     window.open(pdfUrl, "_blank");
 });

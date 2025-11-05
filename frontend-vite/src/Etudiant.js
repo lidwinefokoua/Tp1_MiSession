@@ -10,9 +10,9 @@ export function CreerDocument(users) {
     users.forEach((u, i) => {
         body.push([
             { text: (i + 1).toString(), alignment: "center" },
-            { text: u.first_name || "—", style: "cellText" },
-            { text: u.last_name || "—", style: "cellText" },
-            { text: u.email || "—", style: "cellText" }
+            { text: u.prenom || "—", style: "cellText" },
+            { text: u.nom || "—", style: "cellText" },
+            { text: u.courriel || "—", style: "cellText" }
         ]);
     });
 

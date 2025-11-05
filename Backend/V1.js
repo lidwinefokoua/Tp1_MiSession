@@ -96,15 +96,14 @@ router.get("/users", accepts("application/json"), async (req, res) => {
         const start = (page - 1) * limit;
         const pageEtudiants = allEtudiants.slice(start, start + limit);
 
-        if (format === "pdf") {
+        if (req.query.format === "pdf") {
             res.setHeader("Content-Type", "application/pdf");
-            res.setHeader("Content-Disposition", "attachment; filename=etudiants_page_" + page + ".pdf");
-
+            res.setHeader("Content-Disposition", `attachment; filename=etudiants_page_${page}.pdf`);
             return writePdf(
                 pageEtudiants.map(e => ({
-                    first_name: e.prenom,
-                    last_name: e.nom,
-                    email: e.courriel
+                    prenom: e.prenom,
+                    nom: e.nom,
+                    courriel: e.courriel
                 })),
                 res
             );
@@ -142,9 +141,8 @@ router.get("/users", accepts("application/json"), async (req, res) => {
         console.error("Erreur /users :", err.stack || err);
         res.status(500).json({ message: "Erreur serveur", error: err.message });
     }
-
-
 });
+
 
 router.post("/users", accepts("application/json"), async (req, res) => {
     try {
@@ -254,18 +252,8 @@ router.put("/users/:id", accepts("application/json"), async (req, res) => {
 router.get("/users/:id", accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("🟦 [GET /users/:id] Reçu ID :", id);
         const e = await getEtudiantById(id);
-        console.log("📦 Résultat getEtudiantById :", e);
         if (!e) return res.status(404).json({ message: "Étudiant introuvable" });
-
-        console.log("✅ Champs extraits :", {
-            id: e.id,
-            prenom: e.prenom,
-            nom: e.nom,
-            courriel: e.courriel,
-            da: e.da
-        });
 
         return res.status(200).json({
             status: 200,

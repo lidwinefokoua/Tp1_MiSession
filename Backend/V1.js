@@ -29,17 +29,17 @@ router.use(baseUrl);
 // =======================
 // 🔹 ÉTUDIANTS
 // =======================
-router.get("/users", accepts("application/json"), async (req, res) => {
+router.get("/users", accepts("application/json ", "application/pdf"), async (req, res) => {
     try {
         let { page = 1, limit = 10, search = "", format } = req.query;
         page = parseInt(page);
         limit = parseInt(limit);
 
-        // 🔹 Vérification du paramètre "limit"
+        //  Vérification du paramètre "limit"
         if (isNaN(limit) || limit < 5) {
             limit = 5;
         } else if (limit > 100) {
-            console.warn(`⚠️ Requête avec limit=${limit} tronquée à 100.`);
+            console.warn(`Requête avec limit=${limit} tronquée à 100.`);
             return res.status(400).json({
                 status: 400,
                 message: "La limite maximale d’étudiants par page est 100.",
@@ -47,7 +47,7 @@ router.get("/users", accepts("application/json"), async (req, res) => {
             });
         }
 
-        // 🔹 Vérification du paramètre "page"
+        //  Vérification du paramètre "page"
         if (isNaN(page) || page < 1) {
             return res.status(400).json({
                 status: 400,
@@ -172,7 +172,7 @@ router.post("/users", accepts("application/json"), async (req, res) => {
 // === POST /api/v1/users/:id/photo ===
 // Téléverse une photo PNG dans frontend-vite/public/photos/{id}.png
 
-// 📁 Configuration de multer pour accepter uniquement les PNG
+// Configuration de multer pour accepter uniquement les PNG
 const upload = multer({
     storage: multer.diskStorage({
         destination: (req, file, cb) => {

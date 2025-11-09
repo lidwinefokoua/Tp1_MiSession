@@ -1,20 +1,18 @@
-/*****************************************************
- * CONFIGURATION GLOBALE
- *****************************************************/
-const API_URL = "http://localhost:3000/api/v1";
+//CONFIGURATION GLOBALE
+
+const API_URL = `${import.meta.env.VITE_API_PORT}/api/v1`;
 
 let currentPage = 1;
 let pageSize = 50;
-let currentEtudiantId = null; // ID de l’étudiant sélectionné
+let currentEtudiantId = null;
 
 window.onload = () => {
     loadEtudiants();
     chargerCoursInscription();
 };
 
-/*****************************************************
- * VARIABLES ET ÉTATS GLOBAUX
- *****************************************************/
+ //VARIABLES ET ÉTATS GLOBAUX
+
 const btnAjouter = document.getElementById("btnAjouter");
 const btnModifier = document.getElementById("btnModifier");
 const btnSupprimer = document.getElementById("btnSupprimer");
@@ -37,9 +35,8 @@ const modalDelete = new bootstrap.Modal(document.getElementById("confirmDeleteMo
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
-/*****************************************************
- * SECTION ÉTUDIANTS — Liste et Pagination
- *****************************************************/
+ //SECTION ÉTUDIANTS — Liste et Pagination
+
 async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=${pageSize}`) {
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     const data = await res.json();
@@ -58,16 +55,14 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
         tbody.appendChild(tr);
     });
 
-    // Pagination
     document.getElementById("firstBtn").dataset.url = data.links.first_page || "";
     document.getElementById("prevBtn").dataset.url = data.links.prev_page || "";
     document.getElementById("nextBtn").dataset.url = data.links.next_page || "";
     document.getElementById("lastBtn").dataset.url = data.links.last_page || "";
 }
 
-/*****************************************************
- *FORMULAIRE — Gestion des champs
- *****************************************************/
+ //FORMULAIRE — Gestion des champs
+
 function resetForm() {
     document.getElementById("prenom").value = "";
     document.getElementById("nom").value = "";
@@ -82,9 +77,9 @@ function toggleForm(disabled = true) {
     document.getElementById("DA").disabled = disabled;
 }
 
-/*****************************************************
- *GESTION DE LA PHOTO
- *****************************************************/
+
+ //GESTION DE LA PHOTO
+
 photoEtudiant.addEventListener("click", () => {
     if (modeAjout || modeEdition) inputFile.click();
 });
@@ -102,9 +97,9 @@ inputFile.addEventListener("change", (e) => {
     }
 });
 
-/*****************************************************
- * AJOUT D’ÉTUDIANT
- *****************************************************/
+
+ // AJOUT D’ÉTUDIANT
+
 btnAjouter.addEventListener("click", async () => {
     if (!modeAjout) activerModeAjout();
     else await enregistrerNouvelEtudiant();
@@ -170,9 +165,9 @@ function desactiverModeAjout() {
     photoEtudiant.title = "";
 }
 
-/*****************************************************
- * MODIFICATION D’ÉTUDIANT
- *****************************************************/
+
+ // MODIFICATION D’ÉTUDIANT
+
 btnModifier.addEventListener("click", async () => {
     if (modeAjout) return desactiverModeAjout();
     if (!currentEtudiantId) return alert("Veuillez d’abord sélectionner un étudiant.");
@@ -238,9 +233,8 @@ async function enregistrerModificationEtudiant() {
     }
 }
 
-/*****************************************************
- * SUPPRESSION D’ÉTUDIANT
- *****************************************************/
+ //SUPPRESSION D’ÉTUDIANT
+
 btnSupprimer.addEventListener("click", () => {
     if (!currentEtudiantId) return alert("Veuillez d’abord sélectionner un étudiant à supprimer.");
     modalDelete.show();
@@ -254,7 +248,7 @@ confirmDeleteBtn.addEventListener("click", async () => {
         const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Erreur suppression étudiant");
 
-        alert("🗑️ Étudiant supprimé !");
+        alert("Étudiant supprimé !");
         resetForm();
         toggleForm(true);
         photoEtudiant.src = "photos/0.png";
@@ -268,9 +262,9 @@ confirmDeleteBtn.addEventListener("click", async () => {
 
 cancelDeleteBtn.addEventListener("click", () => modalDelete.hide());
 
-/*****************************************************
- *RECHERCHE, PAGINATION, NOMBRE PAR PAGE
- *****************************************************/
+
+ //RECHERCHE, PAGINATION, NOMBRE PAR PAGE
+
 ["firstBtn", "prevBtn", "nextBtn", "lastBtn"].forEach(id => {
     document.getElementById(id).addEventListener("click", e => {
         const url = e.target.dataset.url;
@@ -303,9 +297,9 @@ document.getElementById("nombre").addEventListener("change", e => {
     loadEtudiants(`${API_URL}/users?page=1&limit=${limit}`);
 });
 
-/*****************************************************
- *AFFICHAGE DÉTAILS + COURS ÉTUDIANT
- *****************************************************/
+
+//AFFICHAGE DÉTAILS + COURS ÉTUDIANT
+
 async function afficherDetailsEtudiant(id) {
     try {
         const res = await fetch(`${API_URL}/users/${id}`, { headers: { Accept: "application/json" } });
@@ -339,9 +333,9 @@ async function afficherDetailsEtudiant(id) {
     }
 }
 
-/*****************************************************
- *AFFICHAGE DES COURS D’UN ÉTUDIANT
- *****************************************************/
+
+ //AFFICHAGE DES COURS D’UN ÉTUDIANT
+
 async function afficherCoursEtudiant(etudiantId) {
     const tbody = document.getElementById("tableCours");
     tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Chargement...</td></tr>`;
@@ -373,9 +367,9 @@ async function afficherCoursEtudiant(etudiantId) {
     }
 }
 
-/*****************************************************
- * FORMULAIRE D’INSCRIPTION — Recherche / Ajouter / Supprimer
- *****************************************************/
+
+ // FORMULAIRE D’INSCRIPTION — Recherche / Ajouter / Supprimer
+
 async function rechercherEtudiants(term) {
     const res = await fetch(`${API_URL}/users?search=${encodeURIComponent(term)}`, { headers: { Accept: "application/json" } });
     const data = await res.json();
@@ -439,9 +433,8 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     }
 });
 
-/*****************************************************
- * CHARGEMENT DES COURS DISPONIBLES
- *****************************************************/
+ // CHARGEMENT DES COURS DISPONIBLES
+
 async function chargerCoursInscription() {
     try {
         const res = await fetch(`${API_URL}/courses`, { headers: { Accept: "application/json" } });
@@ -470,9 +463,8 @@ async function chargerCoursInscription() {
     }
 }
 
-/*****************************************************
- * UTILITAIRE : Message d’information
- *****************************************************/
+ // UTILITAIRE : Message d’information
+
 function showMessage(text, type = "success") {
     const box = document.getElementById("messageBox");
     box.textContent = text;
@@ -481,9 +473,8 @@ function showMessage(text, type = "success") {
     setTimeout(() => { box.style.display = "none"; }, 3000);
 }
 
-/*****************************************************
- *EXPORT PDF
- *****************************************************/
+ //EXPORT PDF
+
 document.getElementById("pdf").addEventListener("click", (e) => {
     e.preventDefault();
     const pdfUrl = `${API_URL}/users?format=pdf&page=${currentPage}&limit=${pageSize}`;

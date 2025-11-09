@@ -1,4 +1,3 @@
-// route_middlewar.js
 export function baseUrl(req, res, next) {
     req.fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     next();

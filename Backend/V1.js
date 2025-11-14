@@ -23,11 +23,10 @@ import fs from "fs";
 
 const router = express.Router();
 
-// Appliquer middleware
 router.use(baseUrl);
 
 // =======================
-// 🔹 ÉTUDIANTS
+// ÉTUDIANTS
 // =======================
 router.get("/users", accepts("application/json ", "application/pdf"), async (req, res) => {
     try {

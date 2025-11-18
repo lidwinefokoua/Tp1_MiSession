@@ -1,4 +1,11 @@
-body {
+body.login-page {
+    background: #f0f4ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.body.main-page {
     background-color: #f8f9fa;
 }
 header {
@@ -45,4 +52,11 @@ img#photoEtudiant {
     background-color: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
+}
+.login-card {
+    width: 380px;
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
 }

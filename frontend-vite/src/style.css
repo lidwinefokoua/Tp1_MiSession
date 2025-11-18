@@ -5,9 +5,19 @@ body.login-page {
     align-items: center;
     height: 100vh;
 }
-.body.main-page {
+
+body.main-page {
     background-color: #f8f9fa;
 }
+
+body.register-page {
+    background: #f0f4ff;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 header {
     background-color: #0d6efd;
     color: white;
@@ -16,11 +26,13 @@ header {
     font-size: 1.5rem;
     font-weight: 600;
 }
+
 .card {
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     border: none;
     border-radius: 12px;
 }
+
 img#photoEtudiant {
     width: 130px;
     height: 130px;
@@ -29,9 +41,11 @@ img#photoEtudiant {
     border: 3px solid #dee2e6;
     background-color: #fff;
 }
+
 .form-label {
     font-weight: 500;
 }
+
 .actions button, .actions a {
     margin-right: 6px;
 }
@@ -43,20 +57,31 @@ img#photoEtudiant {
     display: none;
     font-weight: 500;
 }
+
 .message-box.success {
     background-color: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
 }
+
 .message-box.error {
     background-color: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
 .login-card {
     width: 380px;
     background: white;
     padding: 25px;
     border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.register-card {
+    width: 420px;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }

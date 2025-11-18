@@ -126,7 +126,6 @@ export async function deleteEtudiant(id) {
             return false;
         }
 
-        //Supprimer la photo correspondante
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
 

@@ -480,3 +480,18 @@ document.getElementById("pdf").addEventListener("click", (e) => {
     const pdfUrl = `${API_URL}/users?format=pdf&page=${currentPage}&limit=${pageSize}`;
     window.open(pdfUrl, "_blank");
 });
+
+
+// Remplir les infos du profil au moment du clic
+document.getElementById("btnChangeRole").addEventListener("click", () => {
+    alert("Changer le rôle — fonctionnalité à implémenter");
+});
+
+document.getElementById("btnLogout").addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "index.html";
+});
+document.getElementById("profileName").textContent = user.nom + " " + user.prenom;
+document.getElementById("profileRole").textContent = "Rôle : " + user.role;
+document.getElementById("profilePhoto").src = "public/photos/" + user.id + ".png";
+

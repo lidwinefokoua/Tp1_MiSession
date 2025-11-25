@@ -32,6 +32,10 @@ header {
     border: none;
     border-radius: 12px;
 }
+.dropdown-menu {
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
 
 img#photoEtudiant {
     width: 130px;

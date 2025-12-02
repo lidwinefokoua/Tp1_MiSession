@@ -70,10 +70,10 @@ router.get("/users", accepts("application/json"), async (req, res) => {
                 })),
                 meta: { page, limit, totalItems: total, totalPages },
                 links: {
-                    first_page: `${req.protocol}://${req.get("host")}/api/v1/users?page=1&limit=${limit}&search=${encodeURIComponent(search)}`,
-                    prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v1/users?page=${page - 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
-                    next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v1/users?page=${page + 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
-                    last_page: `${req.protocol}://${req.get("host")}/api/v1/users?page=${totalPages}&limit=${limit}&search=${encodeURIComponent(search)}`
+                    first_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=1&limit=${limit}&search=${encodeURIComponent(search)}`,
+                    prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page - 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
+                    next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page + 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
+                    last_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=${totalPages}&limit=${limit}&search=${encodeURIComponent(search)}`
                 }
             });
         }
@@ -116,14 +116,14 @@ router.get("/users", accepts("application/json"), async (req, res) => {
                 nom: e.nom,
                 courriel: e.courriel,
                 da: e.da,
-                pdf: `${req.protocol}://${req.get("host")}/api/v1/users?format=pdf&page=${page}&limit=${limit}`
+                pdf: `${req.protocol}://${req.get("host")}/api/v2/users?format=pdf&page=${page}&limit=${limit}`
             })),
             meta: { page, limit, totalItems: total, totalPages },
             links: {
-                first_page: `${req.protocol}://${req.get("host")}/api/v1/users?page=1&limit=${limit}`,
-                prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v1/users?page=${page - 1}&limit=${limit}` : null,
-                next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v1/users?page=${page + 1}&limit=${limit}` : null,
-                last_page: `${req.protocol}://${req.get("host")}/api/v1/users?page=${totalPages}&limit=${limit}`
+                first_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=1&limit=${limit}`,
+                prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page - 1}&limit=${limit}` : null,
+                next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page + 1}&limit=${limit}` : null,
+                last_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=${totalPages}&limit=${limit}`
             }
         });
     } catch (err) {
@@ -341,8 +341,8 @@ router.post("/inscriptions", accepts("application/json"), async (req, res) => {
                 date_inscription: inscription.date_inscription
             },
             links: {
-                etudiant: `${req.protocol}://${req.get("host")}/api/v1/users/${etudiantId}`,
-                cours: `${req.protocol}://${req.get("host")}/api/v1/courses/${coursId}`
+                etudiant: `${req.protocol}://${req.get("host")}/api/v2/users/${etudiantId}`,
+                cours: `${req.protocol}://${req.get("host")}/api/v2/courses/${coursId}`
             }
         });
     } catch (err) {

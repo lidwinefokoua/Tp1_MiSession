@@ -1,4 +1,3 @@
-
 //CONFIGURATION GLOBALE
 const API_BASE = import.meta.env.VITE_API_URL;
 const API_URL = `${API_BASE}/api/v2`;
@@ -57,7 +56,7 @@ async function checkAuth() {
 // };
 
 
- //VARIABLES ET ÉTATS GLOBAUX
+//VARIABLES ET ÉTATS GLOBAUX
 
 const btnAjouter = document.getElementById("btnAjouter");
 const btnModifier = document.getElementById("btnModifier");
@@ -81,7 +80,7 @@ const modalDelete = new bootstrap.Modal(document.getElementById("confirmDeleteMo
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
- //SECTION ÉTUDIANTS — Liste et Pagination
+//SECTION ÉTUDIANTS — Liste et Pagination
 
 async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=${pageSize}`) {
     const res = await fetch(url, {
@@ -117,7 +116,7 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
     document.getElementById("lastBtn").dataset.url = data.links.last_page || "";
 }
 
- //FORMULAIRE — Gestion des champs
+//FORMULAIRE — Gestion des champs
 
 function resetForm() {
     document.getElementById("prenom").value = "";
@@ -134,7 +133,7 @@ function toggleForm(disabled = true) {
 }
 
 
- //GESTION DE LA PHOTO
+//GESTION DE LA PHOTO
 
 photoEtudiant.addEventListener("click", () => {
     if (modeAjout || modeEdition) inputFile.click();
@@ -154,7 +153,7 @@ inputFile.addEventListener("change", (e) => {
 });
 
 
- // AJOUT D’ÉTUDIANT
+// AJOUT D’ÉTUDIANT
 
 btnAjouter.addEventListener("click", async () => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -201,7 +200,7 @@ async function enregistrerNouvelEtudiant() {
         if (selectedFile) {
             const formData = new FormData();
             formData.append("photo", selectedFile);
-            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, { method: "POST", body: formData });
+            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, {method: "POST", body: formData});
             if (!uploadRes.ok) throw new Error("Erreur upload photo");
         }
 
@@ -226,7 +225,7 @@ function desactiverModeAjout() {
 }
 
 
- // MODIFICATION D’ÉTUDIANT
+// MODIFICATION D’ÉTUDIANT
 
 btnModifier.addEventListener("click", async () => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -297,7 +296,7 @@ async function enregistrerModificationEtudiant() {
     }
 }
 
- //SUPPRESSION D’ÉTUDIANT
+//SUPPRESSION D’ÉTUDIANT
 
 btnSupprimer.addEventListener("click", () => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -312,7 +311,7 @@ confirmDeleteBtn.addEventListener("click", async () => {
     setTimeout(() => document.activeElement.blur(), 100);
 
     try {
-        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, { method: "DELETE" });
+        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {method: "DELETE"});
         if (!res.ok) throw new Error("Erreur suppression étudiant");
 
         alert("Étudiant supprimé !");
@@ -330,12 +329,17 @@ confirmDeleteBtn.addEventListener("click", async () => {
 cancelDeleteBtn.addEventListener("click", () => modalDelete.hide());
 
 
- //RECHERCHE, PAGINATION, NOMBRE PAR PAGE
+//RECHERCHE, PAGINATION, NOMBRE PAR PAGE
 
 ["firstBtn", "prevBtn", "nextBtn", "lastBtn"].forEach(id => {
     document.getElementById(id).addEventListener("click", e => {
         const url = e.target.dataset.url;
-        if (url) loadEtudiants(url);
+        if (!url) return;
+
+        const params = new URL(url).searchParams;
+        currentPage = parseInt(params.get("page")) || 1;
+
+        loadEtudiants(url);
     });
 });
 
@@ -358,10 +362,9 @@ document.getElementById("searchEtudiant").addEventListener("keypress", e => {
 });
 
 document.getElementById("nombre").addEventListener("change", e => {
-    let limit = parseInt(e.target.value);
-    limit = Math.min(Math.max(limit, 10), 100);
-    pageSize = limit;
-    loadEtudiants(`${API_URL}/users?page=1&limit=${limit}`);
+    pageSize = parseInt(e.target.value);
+    currentPage = 1; // on revient à page 1
+    loadEtudiants(`${API_URL}/users?page=1&limit=${pageSize}`);
 });
 
 
@@ -387,7 +390,9 @@ async function afficherDetailsEtudiant(id) {
 
         const photo = document.getElementById("photoEtudiant");
         photo.src = `photos/${id}.png`;
-        photo.onerror = () => { photo.src = "photos/0.png"; };
+        photo.onerror = () => {
+            photo.src = "photos/0.png";
+        };
 
         await afficherCoursEtudiant(id);
 
@@ -405,7 +410,7 @@ async function afficherDetailsEtudiant(id) {
 }
 
 
- //AFFICHAGE DES COURS D’UN ÉTUDIANT
+//AFFICHAGE DES COURS D’UN ÉTUDIANT
 
 async function afficherCoursEtudiant(etudiantId) {
     const tbody = document.getElementById("tableCours");
@@ -444,7 +449,7 @@ async function afficherCoursEtudiant(etudiantId) {
 }
 
 
- // FORMULAIRE D’INSCRIPTION — Recherche / Ajouter / Supprimer
+// FORMULAIRE D’INSCRIPTION — Recherche / Ajouter / Supprimer
 
 async function rechercherEtudiants(term) {
     const res = await fetch(
@@ -525,7 +530,7 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     }
 });
 
- // CHARGEMENT DES COURS DISPONIBLES
+// CHARGEMENT DES COURS DISPONIBLES
 
 async function chargerCoursInscription() {
     try {
@@ -559,17 +564,19 @@ async function chargerCoursInscription() {
     }
 }
 
- // UTILITAIRE : Message d’information
+// UTILITAIRE : Message d’information
 
 function showMessage(text, type = "success") {
     const box = document.getElementById("messageBox");
     box.textContent = text;
     box.className = `message-box ${type}`;
     box.style.display = "block";
-    setTimeout(() => { box.style.display = "none"; }, 3000);
+    setTimeout(() => {
+        box.style.display = "none";
+    }, 3000);
 }
 
- //EXPORT PDF
+//EXPORT PDF
 
 document.getElementById("pdf").addEventListener("click", (e) => {
     e.preventDefault();

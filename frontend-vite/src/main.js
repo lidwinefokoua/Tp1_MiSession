@@ -1,4 +1,3 @@
-
 //CONFIGURATION GLOBALE
 const API_BASE = import.meta.env.VITE_API_URL;
 const API_URL = `${API_BASE}/api/v2`;
@@ -85,7 +84,7 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
 async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=${pageSize}`) {
     const res = await fetch(url, {
-        headers: { Accept: "application/json" },
+        headers: {Accept: "application/json"},
         credentials: "include",
     });
 
@@ -189,9 +188,9 @@ async function enregistrerNouvelEtudiant() {
         // Étape 1 : ajout BD
         const res = await fetch(`${API_URL}/users`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             credentials: "include",
-            body: JSON.stringify({ prenom, nom, email, da })
+            body: JSON.stringify({prenom, nom, email, da})
         });
         if (!res.ok) throw new Error("Erreur ajout étudiant");
 
@@ -201,7 +200,7 @@ async function enregistrerNouvelEtudiant() {
         if (selectedFile) {
             const formData = new FormData();
             formData.append("photo", selectedFile);
-            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, { method: "POST", body: formData });
+            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, {method: "POST", body: formData});
             if (!uploadRes.ok) throw new Error("Erreur upload photo");
         }
 
@@ -279,9 +278,9 @@ async function enregistrerModificationEtudiant() {
 
         const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             credentials: "include",
-            body: JSON.stringify({ prenom, nom, email })
+            body: JSON.stringify({prenom, nom, email})
         });
 
         if (!res.ok) throw new Error("Erreur modification");
@@ -312,7 +311,7 @@ confirmDeleteBtn.addEventListener("click", async () => {
     setTimeout(() => document.activeElement.blur(), 100);
 
     try {
-        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, { method: "DELETE" });
+        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {method: "DELETE"});
         if (!res.ok) throw new Error("Erreur suppression étudiant");
 
         alert("Étudiant supprimé !");
@@ -335,7 +334,12 @@ cancelDeleteBtn.addEventListener("click", () => modalDelete.hide());
 ["firstBtn", "prevBtn", "nextBtn", "lastBtn"].forEach(id => {
     document.getElementById(id).addEventListener("click", e => {
         const url = e.target.dataset.url;
-        if (url) loadEtudiants(url);
+        if (!url) return;
+
+        const params = new URL(url).searchParams;
+        currentPage = parseInt(params.get("page")) || 1;
+
+        loadEtudiants(url);
     });
 });
 
@@ -358,10 +362,9 @@ document.getElementById("searchEtudiant").addEventListener("keypress", e => {
 });
 
 document.getElementById("nombre").addEventListener("change", e => {
-    let limit = parseInt(e.target.value);
-    limit = Math.min(Math.max(limit, 10), 100);
-    pageSize = limit;
-    loadEtudiants(`${API_URL}/users?page=1&limit=${limit}`);
+    pageSize = parseInt(e.target.value);
+    currentPage = 1; // on revient à page 1
+    loadEtudiants(`${API_URL}/users?page=1&limit=${pageSize}`);
 });
 
 
@@ -370,7 +373,7 @@ document.getElementById("nombre").addEventListener("change", e => {
 async function afficherDetailsEtudiant(id) {
     try {
         const res = await fetch(`${API_URL}/users/${id}`, {
-            headers: { Accept: "application/json" },
+            headers: {Accept: "application/json"},
             credentials: "include",
         });
 
@@ -387,7 +390,9 @@ async function afficherDetailsEtudiant(id) {
 
         const photo = document.getElementById("photoEtudiant");
         photo.src = `photos/${id}.png`;
-        photo.onerror = () => { photo.src = "photos/0.png"; };
+        photo.onerror = () => {
+            photo.src = "photos/0.png";
+        };
 
         await afficherCoursEtudiant(id);
 
@@ -414,7 +419,7 @@ async function afficherCoursEtudiant(etudiantId) {
     try {
 
         const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, {
-            headers: { Accept: "application/json" },
+            headers: {Accept: "application/json"},
             credentials: "include",
         });
 
@@ -450,7 +455,7 @@ async function rechercherEtudiants(term) {
     const res = await fetch(
         `${API_URL}/users?search=${encodeURIComponent(term)}`,
         {
-            headers: { Accept: "application/json" },
+            headers: {Accept: "application/json"},
             credentials: "include",
         }
     );
@@ -484,9 +489,9 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
     try {
         const res = await fetch(`${API_URL}/inscriptions`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             credentials: "include",
-            body: JSON.stringify({ etudiantId, coursId }),
+            body: JSON.stringify({etudiantId, coursId}),
         });
 
         const data = await res.json();
@@ -530,7 +535,7 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
 async function chargerCoursInscription() {
     try {
         const res = await fetch(`${API_URL}/courses`, {
-            headers: { Accept: "application/json" },
+            headers: {Accept: "application/json"},
             credentials: "include",
         });
 
@@ -566,7 +571,9 @@ function showMessage(text, type = "success") {
     box.textContent = text;
     box.className = `message-box ${type}`;
     box.style.display = "block";
-    setTimeout(() => { box.style.display = "none"; }, 3000);
+    setTimeout(() => {
+        box.style.display = "none";
+    }, 3000);
 }
 
 //EXPORT PDF
@@ -578,7 +585,6 @@ document.getElementById("pdf").addEventListener("click", (e) => {
 });
 
 
-// Remplir les infos du profil au moment du clic
 document.getElementById("btnChangeRole").addEventListener("click", () => {
     alert("Changer le rôle — fonctionnalité à implémenter");
 });

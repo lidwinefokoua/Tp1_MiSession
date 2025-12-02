@@ -1,15 +1,46 @@
 //CONFIGURATION GLOBALE
-
-const API_URL = `${import.meta.env.VITE_API_PORT}/api/v1`;
+const API_BASE = import.meta.env.VITE_API_URL;
+const API_URL = `${API_BASE}/api/v2`;
 
 let currentPage = 1;
 let pageSize = 50;
 let currentEtudiantId = null;
 
-window.onload = () => {
-    loadEtudiants();
-    chargerCoursInscription();
+async function checkAuth() {
+    console.log("🔒 Vérification de la session…");
+
+    const res = await fetch(`${API_BASE}/auth/me`, {
+        credentials: "include"
+    });
+
+    if (!res.ok) {
+        console.warn("⚠️ Session invalide → retour login.html");
+        window.location.href = "index.html";
+        return;
+    }
+
+    const data = await res.json();
+    console.log("✅ Session valide :", data);
+
+    const user = data.user;
+
+    // Affichage menu profil
+    document.getElementById("profileName").textContent =
+        `${user.prenom} ${user.nom}`;
+
+    document.getElementById("profileRole").textContent =
+        `Rôle : ${user.role}`;
+
+    document.getElementById("profilePhoto").src =
+        `public/photos/${user.sub || user.id}.png`;
+}
+
+window.onload = async () => {
+    await checkAuth();
+    await loadEtudiants();
+    await chargerCoursInscription();
 };
+
 
  //VARIABLES ET ÉTATS GLOBAUX
 
@@ -491,7 +522,4 @@ document.getElementById("btnLogout").addEventListener("click", () => {
     localStorage.removeItem("token");
     window.location.href = "index.html";
 });
-document.getElementById("profileName").textContent = user.nom + " " + user.prenom;
-document.getElementById("profileRole").textContent = "Rôle : " + user.role;
-document.getElementById("profilePhoto").src = "public/photos/" + user.id + ".png";
 

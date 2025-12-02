@@ -8,7 +8,7 @@ let options = {
 };
 
 const { Pool } = pg;
-const pool = new Pool(options);
+export const pool = new Pool(options);
 
 export async function getAllEtudiants(limit, offset = 0) {
     const client = await pool.connect();

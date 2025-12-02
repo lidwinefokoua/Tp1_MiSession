@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des Étudiants, Cours et Inscriptions</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css">
+</head>
+
+<body class="main-page">
+
+<header class="d-flex justify-content-between align-items-center px-3 position-relative">
+    <span>🎓 Gestion des Étudiants, Cours et Inscriptions</span>
+
+    <div class="dropdown">
+        <button class="btn btn-outline-light btn-sm dropdown-toggle p-0 border-0"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <img src="public/icon.webp"
+                 alt="Profil"
+                 style="width:40px;height:40px;border-radius:50%;">
+        </button>
+
+        <!-- MENU PROFIL -->
+        <ul class="dropdown-menu dropdown-menu-end p-3" style="width:280px;">
+            <li class="text-center">
+                <img id="profilePhoto" src="public/photos/0.png"
+                     style="width:80px;height:80px;border-radius:50%;border:2px solid #ddd;">
+            </li>
+
+            <li class="text-center mt-2">
+                <strong id="profileName">Nom Prénom</strong><br>
+                <small id="profileRole" class="text-muted">Rôle : Utilisateur</small>
+            </li>
+
+            <li><hr class="dropdown-divider"></li>
+
+            <li>
+                <button class="btn btn-primary w-100 my-1" id="btnChangeRole">
+                    Changer le rôle
+                </button>
+            </li>
+
+            <li>
+                <button class="btn btn-danger w-100" id="btnLogout">
+                    Se déconnecter
+                </button>
+            </li>
+        </ul>
+    </div>
+</header>
+
+
+<div id="messageBox" class="message-box"></div>
+
+
+<div class="container-fluid my-4">
+    <div class="row g-4">
+
+        <!-- SECTION ÉTUDIANTS -->
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h5 class="card-title mb-3">Étudiants</h5>
+
+                <div class="text-center mb-3">
+                    <img id="photoEtudiant" src="public/photos/0.png" alt="Photo étudiant" class="img-thumbnail"
+                         style="width:120px;height:120px;">
+                </div>
+
+                <form id="formEtudiant">
+                    <div class="mb-2">
+                        <label class="form-label">Prénom</label>
+                        <input type="text" id="prenom" class="form-control form-control-sm" disabled>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Nom</label>
+                        <input type="text" id="nom" class="form-control form-control-sm" disabled>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="email" class="form-control form-control-sm" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Numéro DA</label>
+                        <input type="text" id="DA" class="form-control form-control-sm" placeholder="ex: 1234" disabled>
+                    </div>
+
+                    <div class="actions mb-3">
+                        <button type="button" id="btnAjouter" class="btn btn-success btn-sm">Ajouter</button>
+                        <button type="button" id="btnModifier" class="btn btn-primary btn-sm">Modifier</button>
+                        <button type="button" id="btnSupprimer" class="btn btn-danger btn-sm">Supprimer</button>
+                    </div>
+                </form>
+
+                <hr>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">🔍</span>
+                    <input
+                            type="text"
+                            id="searchEtudiant"
+                            class="form-control form-control-sm"
+                            placeholder="Rechercher par nom, prénom ou DA..."
+                    >
+                    <button class="btn btn-outline-secondary btn-sm" id="btnSearch">Rechercher</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="btnReset">Réinitialiser</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Courriel</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tableEtudiants">
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center my-2">
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm" id="firstBtn">«</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="prevBtn">‹</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="nextBtn">›</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="lastBtn">»</button>
+                    </div>
+                    <div>
+                        <label class="me-1">Éléments/page:</label>
+                        <select id="nombre" class="form-select form-select-sm d-inline-block w-auto">
+                            <option >1</option>
+                            <option >10</option>
+                            <option>20</option>
+                            <option>25</option>
+                            <option>30</option>
+                            <option>35</option>
+                            <option>40</option>
+                            <option selected>50</option>
+                            <option>100</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION COURS -->
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h5 class="card-title mb-3">Cours de l’étudiant</h5>
+
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Nom du cours</th>
+                            <th>Enseignant</th>
+                            <th>Date</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tableCours">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION INSCRIPTIONS -->
+        <div class="col-lg-4">
+            <div class="card p-3">
+                <h5 class="card-title mb-3">Inscriptions</h5>
+                <form id="formInscription">
+                    <label class="form-label">Rechercher un étudiant</label>
+                    <input type="text" id="searchEtudiantInscription"
+                           class="form-control form-control-sm mb-2"
+                           placeholder="Tapez un nom ou DA...">
+
+                    <div class="mb-2">
+                        <label class="form-label">Étudiant</label>
+                        <select id="selectEtudiant" class="form-select form-select-sm"></select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Cours</label>
+                        <select id="selectCours" class="form-select form-select-sm"></select>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success btn-sm w-50">Inscrire</button>
+                        <button type="button" class="btn btn-danger btn-sm w-50">Désinscrire</button>
+                    </div>
+                </form>
+
+                <div class="actions pt-4">
+                    <a href="#" class="btn btn-outline-secondary btn-lg w-100" id="pdf">Export PDF</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMATION ENREGISTREMENT -->
+<div class="modal fade" id="confirmSaveModal" tabindex="-1" aria-labelledby="confirmSaveLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmSaveLabel">Confirmer l’enregistrement</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                Voulez-vous vraiment enregistrer les modifications apportées à cet étudiant ?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelSaveBtn" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" id="confirmSaveBtn">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMATION SUPPRESSION -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteLabel">Supprimer l’étudiant</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                Voulez-vous vraiment supprimer cet étudiant ? Cette action est <strong>irréversible</strong>.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteBtn" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Supprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+    import { checkAuth } from "/src/checkAuth.js";
+
+    await checkAuth();
+</script>
+
+<script type="module" src="/src/main.js"></script>
+
+
+</body>
+</html>

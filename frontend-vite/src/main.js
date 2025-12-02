@@ -36,7 +36,9 @@ async function checkAuth() {
 
     // Affichage profil
     document.getElementById("profileName").textContent =
-        `${user.prenom ?? ""} ${user.nom ?? ""}`;
+        user.nom && user.prenom
+            ? `${user.prenom} ${user.nom}`
+            : `Utilisateur #${user.sub}`;
 
     document.getElementById("profileRole").textContent =
         `Rôle : ${user.role}`;
@@ -55,7 +57,7 @@ async function checkAuth() {
 // };
 
 
- //VARIABLES ET ÉTATS GLOBAUX
+//VARIABLES ET ÉTATS GLOBAUX
 
 const btnAjouter = document.getElementById("btnAjouter");
 const btnModifier = document.getElementById("btnModifier");
@@ -79,10 +81,20 @@ const modalDelete = new bootstrap.Modal(document.getElementById("confirmDeleteMo
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
- //SECTION ÉTUDIANTS — Liste et Pagination
+//SECTION ÉTUDIANTS — Liste et Pagination
 
 async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=${pageSize}`) {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        credentials: "include",
+    });
+
+    if (res.status === 401) {
+        console.warn("⚠️ 401 sur /users → retour login");
+        window.location.href = "index.html";
+        return;
+    }
+
     const data = await res.json();
 
     const tbody = document.getElementById("tableEtudiants");
@@ -105,7 +117,7 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
     document.getElementById("lastBtn").dataset.url = data.links.last_page || "";
 }
 
- //FORMULAIRE — Gestion des champs
+//FORMULAIRE — Gestion des champs
 
 function resetForm() {
     document.getElementById("prenom").value = "";
@@ -122,7 +134,7 @@ function toggleForm(disabled = true) {
 }
 
 
- //GESTION DE LA PHOTO
+//GESTION DE LA PHOTO
 
 photoEtudiant.addEventListener("click", () => {
     if (modeAjout || modeEdition) inputFile.click();
@@ -142,7 +154,7 @@ inputFile.addEventListener("change", (e) => {
 });
 
 
- // AJOUT D’ÉTUDIANT
+// AJOUT D’ÉTUDIANT
 
 btnAjouter.addEventListener("click", async () => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -178,6 +190,7 @@ async function enregistrerNouvelEtudiant() {
         const res = await fetch(`${API_URL}/users`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ prenom, nom, email, da })
         });
         if (!res.ok) throw new Error("Erreur ajout étudiant");
@@ -213,7 +226,7 @@ function desactiverModeAjout() {
 }
 
 
- // MODIFICATION D’ÉTUDIANT
+// MODIFICATION D’ÉTUDIANT
 
 btnModifier.addEventListener("click", async () => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -267,6 +280,7 @@ async function enregistrerModificationEtudiant() {
         const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ prenom, nom, email })
         });
 
@@ -283,7 +297,7 @@ async function enregistrerModificationEtudiant() {
     }
 }
 
- //SUPPRESSION D’ÉTUDIANT
+//SUPPRESSION D’ÉTUDIANT
 
 btnSupprimer.addEventListener("click", () => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -316,7 +330,7 @@ confirmDeleteBtn.addEventListener("click", async () => {
 cancelDeleteBtn.addEventListener("click", () => modalDelete.hide());
 
 
- //RECHERCHE, PAGINATION, NOMBRE PAR PAGE
+//RECHERCHE, PAGINATION, NOMBRE PAR PAGE
 
 ["firstBtn", "prevBtn", "nextBtn", "lastBtn"].forEach(id => {
     document.getElementById(id).addEventListener("click", e => {
@@ -355,7 +369,11 @@ document.getElementById("nombre").addEventListener("change", e => {
 
 async function afficherDetailsEtudiant(id) {
     try {
-        const res = await fetch(`${API_URL}/users/${id}`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`${API_URL}/users/${id}`, {
+            headers: { Accept: "application/json" },
+            credentials: "include",
+        });
+
         if (!res.ok) throw new Error("Étudiant introuvable");
 
         const response = await res.json();
@@ -387,14 +405,19 @@ async function afficherDetailsEtudiant(id) {
 }
 
 
- //AFFICHAGE DES COURS D’UN ÉTUDIANT
+//AFFICHAGE DES COURS D’UN ÉTUDIANT
 
 async function afficherCoursEtudiant(etudiantId) {
     const tbody = document.getElementById("tableCours");
     tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Chargement...</td></tr>`;
 
     try {
-        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, { headers: { Accept: "application/json" } });
+
+        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, {
+            headers: { Accept: "application/json" },
+            credentials: "include",
+        });
+
         const response = await res.json();
         const cours = Array.isArray(response.data) ? response.data : [];
         tbody.innerHTML = "";
@@ -421,10 +444,17 @@ async function afficherCoursEtudiant(etudiantId) {
 }
 
 
- // FORMULAIRE D’INSCRIPTION — Recherche / Ajouter / Supprimer
+// FORMULAIRE D’INSCRIPTION — Recherche / Ajouter / Supprimer
 
 async function rechercherEtudiants(term) {
-    const res = await fetch(`${API_URL}/users?search=${encodeURIComponent(term)}`, { headers: { Accept: "application/json" } });
+    const res = await fetch(
+        `${API_URL}/users?search=${encodeURIComponent(term)}`,
+        {
+            headers: { Accept: "application/json" },
+            credentials: "include",
+        }
+    );
+
     const data = await res.json();
     return data.data;
 }
@@ -455,8 +485,10 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
         const res = await fetch(`${API_URL}/inscriptions`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ etudiantId, coursId })
+            credentials: "include",
+            body: JSON.stringify({ etudiantId, coursId }),
         });
+
         const data = await res.json();
 
         if (!res.ok) return showMessage(data.message || "Erreur d’inscription.", "error");
@@ -476,7 +508,14 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/inscriptions/${etudiantId}/${coursId}`, { method: "DELETE" });
+        const res = await fetch(
+            `${API_URL}/inscriptions/${etudiantId}/${coursId}`,
+            {
+                method: "DELETE",
+                credentials: "include",
+            }
+        );
+
         if (!res.ok) throw new Error("Erreur désinscription");
         showMessage("Étudiant désinscrit !");
         if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
@@ -486,11 +525,15 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     }
 });
 
- // CHARGEMENT DES COURS DISPONIBLES
+// CHARGEMENT DES COURS DISPONIBLES
 
 async function chargerCoursInscription() {
     try {
-        const res = await fetch(`${API_URL}/courses`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`${API_URL}/courses`, {
+            headers: { Accept: "application/json" },
+            credentials: "include",
+        });
+
         const data = await res.json();
         const cours = Array.isArray(data) ? data : data.data;
 
@@ -516,7 +559,7 @@ async function chargerCoursInscription() {
     }
 }
 
- // UTILITAIRE : Message d’information
+// UTILITAIRE : Message d’information
 
 function showMessage(text, type = "success") {
     const box = document.getElementById("messageBox");
@@ -526,7 +569,7 @@ function showMessage(text, type = "success") {
     setTimeout(() => { box.style.display = "none"; }, 3000);
 }
 
- //EXPORT PDF
+//EXPORT PDF
 
 document.getElementById("pdf").addEventListener("click", (e) => {
     e.preventDefault();

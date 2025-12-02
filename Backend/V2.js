@@ -159,14 +159,12 @@ const upload = multer({
             cb(null, dest);
         },
         filename: (req, file, cb) => {
-            const ext = path.extname(file.originalname).toLowerCase();
-            if (ext !== ".png") return cb(new Error("Format PNG uniquement"));
             cb(null, `${req.params.id}.png`);
         }
     }),
     fileFilter: (req, file, cb) => {
         if (file.mimetype !== "image/png")
-            return cb(new Error("Seuls les fichiers PNG sont acceptés"));
+            return cb(new Error("PNG obligatoire"));
         cb(null, true);
     }
 });

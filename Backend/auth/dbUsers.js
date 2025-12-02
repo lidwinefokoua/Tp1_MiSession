@@ -50,3 +50,46 @@ export async function getUserByEmail(email) {
         client.release();
     }
 }
+
+export async function getUserById(id) {
+    const client = await pool.connect();
+    try {
+        const query = `SELECT * FROM s4205se_${process.env.PGUSER}.users WHERE id = $1`;
+        const { rows } = await client.query(query, [id]);
+        return rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function updatePassword(id, newHash) {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `UPDATE s4205se_${process.env.PGUSER}.users 
+             SET password_hash = $1 
+             WHERE id = $2`,
+            [newHash, id]
+        );
+        return true;
+    } finally {
+        client.release();
+    }
+}
+
+export async function updateSubscribed(id, subscribed) {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `UPDATE s4205se_${process.env.PGUSER}.users 
+             SET subscribed = $2 
+             WHERE id = $1`,
+            [id, subscribed]
+        );
+    } finally {
+        client.release();
+    }
+}
+
+

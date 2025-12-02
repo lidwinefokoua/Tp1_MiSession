@@ -16,6 +16,8 @@ authRouter.get("/me",authRequired, (req, res) => {
         user: req.user
     });
 });
+
+
 authRouter.post("/register", async (req, res) => {
     try {
         const { nom, prenom, email, password } = req.body;
@@ -29,7 +31,8 @@ authRouter.post("/register", async (req, res) => {
             prenom,
             email,
             password_hash: hash,
-            role: "normal"   // ⭐ par défaut rôle normal
+            role: "normal"  ,
+            subscribed: true// ⭐ par défaut rôle normal
         });
 
         res.status(201).json({ message: "Utilisateur créé", user });

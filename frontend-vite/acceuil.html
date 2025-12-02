@@ -27,7 +27,7 @@
         <!-- MENU PROFIL -->
         <ul class="dropdown-menu dropdown-menu-end p-3" style="width:280px;">
             <li class="text-center">
-                <img id="profilePhoto" src="public/photos/0.png"
+                <img id="profilePhoto" src="public/photos/profile.png"
                      style="width:80px;height:80px;border-radius:50%;border:2px solid #ddd;">
             </li>
 
@@ -39,8 +39,8 @@
             <li><hr class="dropdown-divider"></li>
 
             <li>
-                <button class="btn btn-primary w-100 my-1" id="btnChangeRole">
-                    Changer le rôle
+                <button class="btn btn-warning w-100 my-1" id="btnOpenPasswordModal">
+                    Changer mot de passe
                 </button>
             </li>
 
@@ -239,6 +239,43 @@
                 <button type="button" class="btn btn-secondary" id="cancelDeleteBtn" data-bs-dismiss="modal">Annuler</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Supprimer</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CHANGEMENT MOT DE PASSE -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Changer le mot de passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="mb-3">
+                    <label class="form-label">Ancien mot de passe</label>
+                    <input type="password" id="oldPassword" class="form-control">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nouveau mot de passe</label>
+                    <input type="password" id="newPassword" class="form-control">
+                </div>
+
+                <div id="pwMessage" class="alert d-none"></div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button class="btn btn-success" id="btnConfirmPassword">
+                    Confirmer
+                </button>
+            </div>
+
         </div>
     </div>
 </div>

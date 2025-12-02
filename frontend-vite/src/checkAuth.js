@@ -8,36 +8,35 @@ const API_URL = import.meta.env.VITE_API_URL;
 export async function checkAuth() {
     console.log("🔒 Vérification de la session…");
 
-    try {
-        const res = await fetch(`${API_URL}/auth/me`, {
-            credentials: "include"
-        });
+    const res = await fetch(`${API_URL}/auth/me`, {
+        credentials: "include"
+    });
 
-        if (!res.ok) {
-            console.warn("⚠️ Session invalide → redirection vers index.html");
-            window.location.href = "index.html";
-            return;
-        }
-
-        const data = await res.json();
-        console.log("✅ Session valide :", data);
-
-        const user = data.user;
-
-        // Mettre à jour les infos du profil dans l’UI
-        document.getElementById("profileName").textContent =
-            `${user.prenom} ${user.nom}`;
-
-        document.getElementById("profileRole").textContent =
-            `Rôle : ${user.role}`;
-
-        document.getElementById("profilePhoto").src =
-            `public/photos/${user.sub || user.id}.png`;
-
-        return user;
-
-    } catch (err) {
-        console.error("❌ Erreur lors de la vérification de session :", err);
+    if (!res.ok) {
+        console.warn("⚠️ Session invalide → retour login.html");
         window.location.href = "index.html";
+        return null;
     }
+
+    const data = await res.json();
+    console.log("✅ Session valide :", data);
+
+    const user = data.user;
+
+    // Sauvegarder localement pour les actions (ajout/modif)
+    localStorage.setItem("user", JSON.stringify(user));
+
+// UI du menu profil
+    const profileName = document.getElementById("profileName");
+    const profileRole = document.getElementById("profileRole");
+    const profilePhoto = document.getElementById("profilePhoto");
+
+    if (profileName) profileName.textContent = `${user.prenom} ${user.nom}`;
+    if (profileRole) profileRole.textContent = `Rôle : ${user.role}`;
+
+    if (profilePhoto) {
+        profilePhoto.src = `public/photos/${user.sub || user.id}.png`;
+    }
+
+    return user;
 }

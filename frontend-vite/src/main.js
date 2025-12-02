@@ -1,3 +1,4 @@
+
 //CONFIGURATION GLOBALE
 const API_BASE = import.meta.env.VITE_API_URL;
 const API_URL = `${API_BASE}/api/v2`;
@@ -6,6 +7,17 @@ let currentPage = 1;
 let pageSize = 50;
 let currentEtudiantId = null;
 
+window.addEventListener("DOMContentLoaded", async () => {
+    const user = await checkAuth();
+    if (!user) return;
+
+    appliquerRestrictionsSelonRole(user.role);
+
+    await loadEtudiants();
+    await chargerCoursInscription();
+});
+
+// --- FIX 1 : checkAuth doit RETOURNER le user ---
 async function checkAuth() {
     console.log("🔒 Vérification de la session…");
 
@@ -16,30 +28,31 @@ async function checkAuth() {
     if (!res.ok) {
         console.warn("⚠️ Session invalide → retour login.html");
         window.location.href = "index.html";
-        return;
+        return null;
     }
 
     const data = await res.json();
-    console.log("✅ Session valide :", data);
-
     const user = data.user;
 
-    // Affichage menu profil
+    // Affichage profil
     document.getElementById("profileName").textContent =
-        `${user.prenom} ${user.nom}`;
+        `${user.prenom ?? ""} ${user.nom ?? ""}`;
 
     document.getElementById("profileRole").textContent =
         `Rôle : ${user.role}`;
 
     document.getElementById("profilePhoto").src =
         `public/photos/${user.sub || user.id}.png`;
+
+    return user; // ⭐ LE RETOUR QUI MANQUAIT ⭐
 }
 
-window.onload = async () => {
-    await checkAuth();
-    await loadEtudiants();
-    await chargerCoursInscription();
-};
+
+// window.onload = async () => {
+//     await checkAuth();
+//     await loadEtudiants();
+//     await chargerCoursInscription();
+// };
 
 
  //VARIABLES ET ÉTATS GLOBAUX
@@ -132,6 +145,9 @@ inputFile.addEventListener("change", (e) => {
  // AJOUT D’ÉTUDIANT
 
 btnAjouter.addEventListener("click", async () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user.role === "normal") return;
+
     if (!modeAjout) activerModeAjout();
     else await enregistrerNouvelEtudiant();
 });
@@ -200,6 +216,9 @@ function desactiverModeAjout() {
  // MODIFICATION D’ÉTUDIANT
 
 btnModifier.addEventListener("click", async () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user.role === "normal") return;
+
     if (modeAjout) return desactiverModeAjout();
     if (!currentEtudiantId) return alert("Veuillez d’abord sélectionner un étudiant.");
 
@@ -267,6 +286,9 @@ async function enregistrerModificationEtudiant() {
  //SUPPRESSION D’ÉTUDIANT
 
 btnSupprimer.addEventListener("click", () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user.role === "normal") return;
+
     if (!currentEtudiantId) return alert("Veuillez d’abord sélectionner un étudiant à supprimer.");
     modalDelete.show();
 });
@@ -522,4 +544,39 @@ document.getElementById("btnLogout").addEventListener("click", () => {
     localStorage.removeItem("token");
     window.location.href = "index.html";
 });
+
+function appliquerRestrictionsSelonRole(role) {
+    console.log("🎭 Rôle détecté :", role);
+
+    const isNormal = role === "normal";
+
+    // Étudiants
+    document.getElementById("btnAjouter").disabled = isNormal;
+    document.getElementById("btnModifier").disabled = isNormal;
+    document.getElementById("btnSupprimer").disabled = isNormal;
+
+    document.getElementById("prenom").disabled = true;
+    document.getElementById("nom").disabled = true;
+    document.getElementById("email").disabled = true;
+    document.getElementById("DA").disabled = true;
+
+    // Inscription
+    document.querySelector("#formInscription .btn-success").disabled = isNormal;
+    document.querySelector("#formInscription .btn-danger").disabled = isNormal;
+    document.getElementById("selectEtudiant").disabled = isNormal;
+    document.getElementById("selectCours").disabled = isNormal;
+    document.getElementById("searchEtudiantInscription").disabled = isNormal;
+
+    // PDF
+    const pdfBtn = document.getElementById("pdf");
+    pdfBtn.classList.toggle("disabled", isNormal);
+    if (isNormal) pdfBtn.onclick = (e) => e.preventDefault();
+
+    // Photo
+    document.getElementById("photoEtudiant").style.pointerEvents = isNormal ? "none" : "auto";
+
+    document.getElementById("profileRole").textContent =
+        "Rôle : " + (isNormal ? "Normal" : "Éditeur");
+}
+
 

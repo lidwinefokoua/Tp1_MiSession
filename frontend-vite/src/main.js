@@ -43,10 +43,10 @@ async function checkAuth() {
     document.getElementById("profileRole").textContent =
         `Rôle : ${user.role}`;
 
-    document.getElementById("profilePhoto").src =
-        `public/photos/${user.sub || user.id}.png`;
+    document.getElementById("profilePhoto").src = "public/photos/profile.png";
 
-    return user; // ⭐ LE RETOUR QUI MANQUAIT ⭐
+
+    return user;
 }
 
 
@@ -579,9 +579,6 @@ document.getElementById("pdf").addEventListener("click", (e) => {
 
 
 // Remplir les infos du profil au moment du clic
-document.getElementById("btnChangeRole").addEventListener("click", () => {
-    alert("Changer le rôle — fonctionnalité à implémenter");
-});
 
 document.getElementById("btnLogout").addEventListener("click", () => {
     localStorage.removeItem("token");
@@ -610,16 +607,76 @@ function appliquerRestrictionsSelonRole(role) {
     document.getElementById("selectCours").disabled = isNormal;
     document.getElementById("searchEtudiantInscription").disabled = isNormal;
 
+    //mots de passes
+
+    const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
+
+    document.getElementById("btnOpenPasswordModal").addEventListener("click", () => {
+        document.getElementById("oldPassword").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("pwMessage").classList.add("d-none");
+        passwordModal.show();
+    });
+
+    document.getElementById("btnConfirmPassword").addEventListener("click", async () => {
+        const oldPassword = document.getElementById("oldPassword").value.trim();
+        const newPassword = document.getElementById("newPassword").value.trim();
+
+        const msgBox = document.getElementById("pwMessage");
+
+        if (!oldPassword || !newPassword) {
+            msgBox.className = "alert alert-danger";
+            msgBox.innerText = "Veuillez remplir les deux champs.";
+            msgBox.classList.remove("d-none");
+            return;
+        }
+
+        const res = await fetch(`${API_BASE}/auth/password`, {
+            method: "PUT",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oldPassword, newPassword })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            msgBox.className = "alert alert-danger";
+            msgBox.innerText = data.message || "Erreur.";
+            msgBox.classList.remove("d-none");
+            return;
+        }
+
+        msgBox.className = "alert alert-success";
+        msgBox.innerText = "Mot de passe mis à jour !";
+        msgBox.classList.remove("d-none");
+
+        setTimeout(() => passwordModal.hide(), 1200);
+    });
+
     // PDF
-    const pdfBtn = document.getElementById("pdf");
-    pdfBtn.classList.toggle("disabled", isNormal);
-    if (isNormal) pdfBtn.onclick = (e) => e.preventDefault();
+    // const pdfBtn = document.getElementById("pdf");
+    // pdfBtn.classList.toggle("disabled", isNormal);
+    // if (isNormal) pdfBtn.onclick = (e) => e.preventDefault();
 
     // Photo
     document.getElementById("photoEtudiant").style.pointerEvents = isNormal ? "none" : "auto";
 
     document.getElementById("profileRole").textContent =
         "Rôle : " + (isNormal ? "Normal" : "Éditeur");
+
+
+    document.getElementById("btnLogout").addEventListener("click", async () => {
+        const res = await fetch(`${API_BASE}/auth/logout`, {
+            method: "DELETE",
+            credentials: "include"
+        });
+
+        localStorage.removeItem("user");
+
+        window.location.href = "index.html";
+    });
+
 }
 
 

@@ -36,7 +36,9 @@ async function checkAuth() {
 
     // Affichage profil
     document.getElementById("profileName").textContent =
-        `${user.prenom ?? ""} ${user.nom ?? ""}`;
+        user.nom && user.prenom
+            ? `${user.prenom} ${user.nom}`
+            : `Utilisateur #${user.sub}`;
 
     document.getElementById("profileRole").textContent =
         `Rôle : ${user.role}`;
@@ -82,7 +84,17 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
  //SECTION ÉTUDIANTS — Liste et Pagination
 
 async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=${pageSize}`) {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        credentials: "include",
+    });
+
+    if (res.status === 401) {
+        console.warn("⚠️ 401 sur /users → retour login");
+        window.location.href = "index.html";
+        return;
+    }
+
     const data = await res.json();
 
     const tbody = document.getElementById("tableEtudiants");
@@ -178,6 +190,7 @@ async function enregistrerNouvelEtudiant() {
         const res = await fetch(`${API_URL}/users`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ prenom, nom, email, da })
         });
         if (!res.ok) throw new Error("Erreur ajout étudiant");
@@ -267,6 +280,7 @@ async function enregistrerModificationEtudiant() {
         const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ prenom, nom, email })
         });
 
@@ -355,7 +369,11 @@ document.getElementById("nombre").addEventListener("change", e => {
 
 async function afficherDetailsEtudiant(id) {
     try {
-        const res = await fetch(`${API_URL}/users/${id}`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`${API_URL}/users/${id}`, {
+            headers: { Accept: "application/json" },
+            credentials: "include",
+        });
+
         if (!res.ok) throw new Error("Étudiant introuvable");
 
         const response = await res.json();
@@ -394,7 +412,12 @@ async function afficherCoursEtudiant(etudiantId) {
     tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Chargement...</td></tr>`;
 
     try {
-        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, { headers: { Accept: "application/json" } });
+
+        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, {
+            headers: { Accept: "application/json" },
+            credentials: "include",
+        });
+
         const response = await res.json();
         const cours = Array.isArray(response.data) ? response.data : [];
         tbody.innerHTML = "";
@@ -424,7 +447,14 @@ async function afficherCoursEtudiant(etudiantId) {
  // FORMULAIRE D’INSCRIPTION — Recherche / Ajouter / Supprimer
 
 async function rechercherEtudiants(term) {
-    const res = await fetch(`${API_URL}/users?search=${encodeURIComponent(term)}`, { headers: { Accept: "application/json" } });
+    const res = await fetch(
+        `${API_URL}/users?search=${encodeURIComponent(term)}`,
+        {
+            headers: { Accept: "application/json" },
+            credentials: "include",
+        }
+    );
+
     const data = await res.json();
     return data.data;
 }
@@ -455,8 +485,10 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
         const res = await fetch(`${API_URL}/inscriptions`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ etudiantId, coursId })
+            credentials: "include",
+            body: JSON.stringify({ etudiantId, coursId }),
         });
+
         const data = await res.json();
 
         if (!res.ok) return showMessage(data.message || "Erreur d’inscription.", "error");
@@ -476,7 +508,14 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
     if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/inscriptions/${etudiantId}/${coursId}`, { method: "DELETE" });
+        const res = await fetch(
+            `${API_URL}/inscriptions/${etudiantId}/${coursId}`,
+            {
+                method: "DELETE",
+                credentials: "include",
+            }
+        );
+
         if (!res.ok) throw new Error("Erreur désinscription");
         showMessage("Étudiant désinscrit !");
         if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
@@ -490,7 +529,11 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
 
 async function chargerCoursInscription() {
     try {
-        const res = await fetch(`${API_URL}/courses`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`${API_URL}/courses`, {
+            headers: { Accept: "application/json" },
+            credentials: "include",
+        });
+
         const data = await res.json();
         const cours = Array.isArray(data) ? data : data.data;
 

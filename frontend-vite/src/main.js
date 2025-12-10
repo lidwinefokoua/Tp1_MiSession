@@ -372,7 +372,6 @@ document.getElementById("nombre").addEventListener("change", e => {
 
 
 //AFFICHAGE DÉTAILS + COURS ÉTUDIANT
-
 async function afficherDetailsEtudiant(id) {
     try {
         const res = await fetch(`${API_URL}/users/${id}`, {
@@ -381,7 +380,6 @@ async function afficherDetailsEtudiant(id) {
         });
 
         if (!res.ok) throw new Error("Étudiant introuvable");
-
         const response = await res.json();
         const e = response.data;
         currentEtudiantId = id;

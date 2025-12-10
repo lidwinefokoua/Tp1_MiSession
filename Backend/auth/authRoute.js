@@ -9,13 +9,26 @@ import {updateSubscribed} from "./dbUsers.js";
 
 import {createSession} from "./jwt.js";
 import {authRequired} from "./middlewar_auth.js";
+import {validateBody, validateUserFromToken} from "../validators/validate.js";
+import {
+    loginSchema,
+    registerUserSchema,
+    updatePasswordSchema,
+    userIdFromTokenSchema
+} from "../validators/userValidators.js";
 
 
 export const authRouter = express.Router();
 
-authRouter.get("/me", authRequired, async (req, res) => {
-    // ⚠️ req.user.sub contient l'ID extrait du JWT
-    const dbUser = await getUserById(req.user.sub);
+authRouter.get(
+    "/me",
+    authRequired,
+    validateUserFromToken(userIdFromTokenSchema),
+    async (req, res) => {
+        try {
+            const { sub } = req.validated.user;
+
+            const dbUser = await getUserById(sub);
 
     if (!dbUser) {
         return res.status(404).json({ message: "Utilisateur introuvable" });
@@ -30,12 +43,20 @@ authRouter.get("/me", authRequired, async (req, res) => {
             role: dbUser.role
         }
     });
-});
+} catch (err) {
+    console.error("Erreur GET /auth/me :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+}
+}
+);
 
 
-authRouter.post("/register", async (req, res) => {
-    try {
-        const { nom, prenom, email, password } = req.body;
+authRouter.post(
+    "/register",
+    validateBody(registerUserSchema),
+    async (req, res) => {
+        try {
+            const { nom, prenom, email, password } = req.validated.body;
 
         const hash = await argon2.hash(password, {
             type: argon2.argon2id
@@ -63,17 +84,26 @@ authRouter.post("/register", async (req, res) => {
 //
 // 🔑 Connexion
 //
-authRouter.post("/login", async (req, res) => {
-    const { email, password } = req.body;
+authRouter.post(
+    "/login",
+    validateBody(loginSchema),
+    async (req, res) => {
+        try {
+            const { email, password } = req.validated.body;
 
-    const user = await getUserByEmail(email);
-    if (!user.subscribed) {
-        return res.status(403).json({
-            message: "Votre compte est désactivé. Contactez un administrateur."
-        });
-    }
+            const user = await getUserByEmail(email);
 
-    if (!user) return res.status(401).json({ message: "Identifiants invalides" });
+            // 1. Vérifier l’existence de l’utilisateur
+            if (!user) {
+                return res.status(401).json({ message: "Identifiants invalides." });
+            }
+
+            if (!user.subscribed) {
+                return res.status(403).json({
+                    message: "Votre compte est désactivé. Contactez un administrateur."
+                });
+            }
+
 
     const ok = await argon2.verify(user.password_hash, password);
     if (!ok) return res.status(401).json({ message: "Mot de passe incorrect" });
@@ -101,13 +131,22 @@ authRouter.post("/login", async (req, res) => {
             role: user.role
         }
     });
-});
+        } catch (err) {
+            console.error("Erreur POST /login :", err);
+            res.status(500).json({ message: "Erreur serveur." });
+        }
+    }
+);
 
 // PUT /auth/password
-authRouter.put("/password", authRequired, async (req, res) => {
-    try {
-        const { oldPassword, newPassword } = req.body;
-        const userId = req.user.sub; // ⭐ vient du JWT validé
+authRouter.put(
+    "/password",
+    authRequired,
+    validateBody(updatePasswordSchema),
+    async (req, res) => {
+        try {
+            const userId = req.user.sub;
+            const { oldPassword, newPassword } = req.validated.body;
 
         if (!oldPassword || !newPassword) {
             return res.status(400).json({ message: "Les deux champs sont requis." });
@@ -141,9 +180,13 @@ authRouter.put("/password", authRequired, async (req, res) => {
 //
 // 🚪 Déconnexion
 //
-authRouter.delete("/disable", authRequired, async (req, res) => {
-    try {
-        const userId = req.user.sub;
+authRouter.delete(
+    "/disable",
+    authRequired,
+    validateUserFromToken(userIdFromTokenSchema),
+    async (req, res) => {
+        try {
+            const { sub: userId } = req.validated.user;
 
         // Désactiver le compte
         await updateSubscribed(userId, false);

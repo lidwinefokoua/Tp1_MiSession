@@ -64,4 +64,26 @@ export function validateParams(schema) {
     };
 }
 
+export function validateUserFromToken(schema) {
+    return (req, res, next) => {
+
+        const { error, value } = schema.validate({ sub: req.user.sub });
+
+        if (error) {
+            return res.status(401).json({
+                status: 401,
+                message: "Token invalide.",
+                errors: error.details.map(d => d.message)
+            });
+        }
+
+        req.validated = req.validated || {};
+        req.validated.user = value;
+
+        next();
+    };
+}
+
+
+
 

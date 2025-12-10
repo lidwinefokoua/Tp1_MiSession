@@ -22,7 +22,6 @@ import {
     countSearchEtudiants,
     getInscriptionsByEtudiant
 } from "./database.js";
-import {validateEtudiant, validateInscription} from "./validators/Validator.js";
 import {authRequired, roleRequired} from "./auth/middlewar_auth.js";
 import {
     createEtudiantSchema, createInscriptionSchema, deleteInscriptionParamsSchema,

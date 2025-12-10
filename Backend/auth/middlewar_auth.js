@@ -32,19 +32,24 @@ export function authenticated(req, res, next) {
 // Exemple :
 // app.get("/cours", authorized("editeur"), ...)
 //
-export function authorized(...roles) {
+export function roleRequired(...allowedRoles) {
     return (req, res, next) => {
+
         if (!req.user) {
-            return res.status(401).json({ message: "Non authentifié." });
+            return res.status(401).json({ message: "Authentification requise." });
         }
 
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ message: "Accès refusé (rôle insuffisant)." });
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({
+                message: "Accès refusé : rôle insuffisant."
+            });
         }
 
         next();
     };
 }
+
+
 
 export function authRequired(req, res, next) {
     const token = req.cookies?.access_token;

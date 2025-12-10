@@ -46,7 +46,7 @@ authRouter.post("/register", async (req, res) => {
             email,
             password_hash: hash,
             role: "normal"  ,
-            subscribed: true// ⭐ par défaut rôle normal
+            subscribed: true
         });
 
         res.status(201).json({ message: "Utilisateur créé", user });
@@ -79,7 +79,7 @@ authRouter.post("/login", async (req, res) => {
 
     const session = createSession({
         sub: user.id,
-        role: user.role,       // ⭐ normal ou editeur
+        role: user.role,
         email: user.email
     });
 
@@ -140,7 +140,7 @@ authRouter.put("/password", authRequired, async (req, res) => {
 //
 // 🚪 Déconnexion
 //
-authRouter.delete("/logout", authRequired, async (req, res) => {
+authRouter.delete("/disable", authRequired, async (req, res) => {
     try {
         const userId = req.user.sub;
 

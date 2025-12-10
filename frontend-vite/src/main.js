@@ -99,7 +99,6 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
         window.location.href = "index.html";
         return;
     }
-
     const tbody = document.getElementById("tableEtudiants");
     tbody.innerHTML = "";
 

@@ -63,7 +63,6 @@ router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("a
                 status: 200,
                 message: "Résultats de la recherche.",
                 data: results.map(e => ({
-                    id: e.id,
                     prenom: e.prenom,
                     nom: e.nom,
                     courriel: e.courriel,
@@ -79,7 +78,6 @@ router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("a
             });
         }
 
-        // Liste complète avec pagination
         const allEtudiants = await getAllEtudiants(1000, 0);
         const total = await getEtudiantsCount();
         const totalPages = Math.ceil(total / limit);
@@ -112,15 +110,16 @@ router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("a
             status: 200,
             message: "Liste d’étudiants récupérée avec succès.",
             data: pageEtudiants.map(e => ({
+                href: `${req.protocol}://${req.get("host")}/api/v2/users/${e.id}`,
                 id: e.id,
                 prenom: e.prenom,
                 nom: e.nom,
                 courriel: e.courriel,
-                da: e.da,
-                pdf: `${req.protocol}://${req.get("host")}/api/v2/users?format=pdf&page=${page}&limit=${limit}`
+
             })),
             meta: { page, limit, totalItems: total, totalPages },
             links: {
+                pdf: `${req.protocol}://${req.get("host")}/api/v2/users?format=pdf&page=${page}&limit=${limit}`,
                 first_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=1&limit=${limit}`,
                 prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page - 1}&limit=${limit}` : null,
                 next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page + 1}&limit=${limit}` : null,
@@ -213,7 +212,11 @@ router.get("/users/:id", accepts("application/json"), async (req, res) => {
         res.status(200).json({
             status: 200,
             message: "Étudiant trouvé.",
-            data: { id: e.id, prenom: e.prenom, nom: e.nom, courriel: e.courriel, da: e.da }
+            data: {href: `${req.protocol}://${req.get("host")}/api/v2/users/${id}`,
+                prenom: e.prenom,
+                nom: e.nom,
+                courriel: e.courriel,
+                da: e.da }
         });
     } catch (err) {
         console.error("Erreur GET /users/:id :", err);

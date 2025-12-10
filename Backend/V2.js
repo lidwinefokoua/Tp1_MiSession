@@ -63,6 +63,7 @@ router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("a
                 status: 200,
                 message: "Résultats de la recherche.",
                 data: results.map(e => ({
+                    id: e.id,
                     prenom: e.prenom,
                     nom: e.nom,
                     courriel: e.courriel,
@@ -143,7 +144,17 @@ router.post("/users", authRequired, roleRequired( "editeur"),accepts("applicatio
         if (!etudiant)
             return res.status(409).json({ message: "Conflit : l'étudiant existe déjà." });
 
-        res.status(201).json(etudiant);
+        res.status(201).json({
+            status: 201,
+            data: {
+                id: etudiant.id,
+                prenom: etudiant.prenom,
+                nom: etudiant.nom,
+                courriel: etudiant.courriel,
+                da: etudiant.da
+            }
+        });
+
     } catch (err) {
         console.error("Erreur ajout étudiant :", err);
         res.status(500).json({ message: "Erreur serveur" });

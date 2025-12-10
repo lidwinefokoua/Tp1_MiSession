@@ -290,7 +290,7 @@ async function enregistrerModificationEtudiant() {
         const updated = await res.json();
 
         alert("Étudiant modifié !");
-        await afficherDetailsEtudiant(updated.id);
+        await afficherDetailsEtudiant(updated.data.id);
         await loadEtudiants();
         desactiverModeEdition();
     } catch (err) {
@@ -599,16 +599,17 @@ function appliquerRestrictionsSelonRole(role) {
     console.log("🎭 Rôle détecté :", role);
 
     const isNormal = role === "normal";
+    const isEditor = role === "editeur";
 
     // Étudiants
     document.getElementById("btnAjouter").disabled = isNormal;
     document.getElementById("btnModifier").disabled = isNormal;
     document.getElementById("btnSupprimer").disabled = isNormal;
 
-    document.getElementById("prenom").disabled = true;
-    document.getElementById("nom").disabled = true;
-    document.getElementById("email").disabled = true;
-    document.getElementById("DA").disabled = true;
+    document.getElementById("prenom").disabled = isNormal;
+    document.getElementById("nom").disabled = isNormal;
+    document.getElementById("email").disabled = isNormal;
+    document.getElementById("DA").disabled = isNormal;
 
     // Inscription
     document.querySelector("#formInscription .btn-success").disabled = isNormal;
@@ -617,77 +618,73 @@ function appliquerRestrictionsSelonRole(role) {
     document.getElementById("selectCours").disabled = isNormal;
     document.getElementById("searchEtudiantInscription").disabled = isNormal;
 
-    //mots de passes
-
-    const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
-
-    document.getElementById("btnOpenPasswordModal").addEventListener("click", () => {
-        document.getElementById("oldPassword").value = "";
-        document.getElementById("newPassword").value = "";
-        document.getElementById("pwMessage").classList.add("d-none");
-        passwordModal.show();
-    });
-
-    document.getElementById("btnConfirmPassword").addEventListener("click", async () => {
-        const oldPassword = document.getElementById("oldPassword").value.trim();
-        const newPassword = document.getElementById("newPassword").value.trim();
-
-        const msgBox = document.getElementById("pwMessage");
-
-        if (!oldPassword || !newPassword) {
-            msgBox.className = "alert alert-danger";
-            msgBox.innerText = "Veuillez remplir les deux champs.";
-            msgBox.classList.remove("d-none");
-            return;
-        }
-
-        const res = await fetch(`${API_BASE}/auth/password`, {
-            method: "PUT",
-            credentials: "include",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({oldPassword, newPassword})
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            msgBox.className = "alert alert-danger";
-            msgBox.innerText = data.message || "Erreur.";
-            msgBox.classList.remove("d-none");
-            return;
-        }
-
-        msgBox.className = "alert alert-success";
-        msgBox.innerText = "Mot de passe mis à jour !";
-        msgBox.classList.remove("d-none");
-
-        setTimeout(() => passwordModal.hide(), 1200);
-    });
-
-    // PDF
-    // const pdfBtn = document.getElementById("pdf");
-    // pdfBtn.classList.toggle("disabled", isNormal);
-    // if (isNormal) pdfBtn.onclick = (e) => e.preventDefault();
-
     // Photo
     document.getElementById("photoEtudiant").style.pointerEvents = isNormal ? "none" : "auto";
 
     document.getElementById("profileRole").textContent =
         "Rôle : " + (isNormal ? "Normal" : "Éditeur");
 
+}
 
-    document.getElementById("btnLogout").addEventListener("click", async () => {
-        const res = await fetch(`${API_BASE}/auth/logout`, {
-            method: "DELETE",
-            credentials: "include"
-        });
+//mots de passes
 
-        localStorage.removeItem("user");
+const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
 
-        window.location.href = "index.html";
+document.getElementById("btnOpenPasswordModal").addEventListener("click", () => {
+    document.getElementById("oldPassword").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("pwMessage").classList.add("d-none");
+    passwordModal.show();
+});
+
+document.getElementById("btnConfirmPassword").addEventListener("click", async () => {
+    const oldPassword = document.getElementById("oldPassword").value.trim();
+    const newPassword = document.getElementById("newPassword").value.trim();
+
+    const msgBox = document.getElementById("pwMessage");
+
+    if (!oldPassword || !newPassword) {
+        msgBox.className = "alert alert-danger";
+        msgBox.innerText = "Veuillez remplir les deux champs.";
+        msgBox.classList.remove("d-none");
+        return;
+    }
+
+    const res = await fetch(`${API_BASE}/auth/password`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({oldPassword, newPassword})
     });
 
-}
+    const data = await res.json();
+
+    if (!res.ok) {
+        msgBox.className = "alert alert-danger";
+        msgBox.innerText = data.message || "Erreur.";
+        msgBox.classList.remove("d-none");
+        return;
+    }
+
+    msgBox.className = "alert alert-success";
+    msgBox.innerText = "Mot de passe mis à jour !";
+    msgBox.classList.remove("d-none");
+
+    setTimeout(() => passwordModal.hide(), 1200);
+});
+
+
+document.getElementById("btnLogout").addEventListener("click", async () => {
+    const res = await fetch(`${API_BASE}/auth/logout`, {
+        method: "DELETE",
+        credentials: "include"
+    });
+
+    localStorage.removeItem("user");
+
+    window.location.href = "index.html";
+});
+
 
 document.getElementById("sortNom").addEventListener("click", () => {
 

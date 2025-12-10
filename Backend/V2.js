@@ -23,12 +23,15 @@ import {
     getInscriptionsByEtudiant
 } from "./database.js";
 import {validateEtudiant, validateInscription} from "./Validator.js";
+import {authRequired, roleRequired} from "./auth/middlewar_auth.js";
 
 const router = express.Router();
 router.use(baseUrl);
 
 // section etudiants
-router.get("/users", accepts("application/json"), async (req, res) => {
+
+// GET /users (liste + recherche + PDF)
+router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("application/json"), async (req, res) => {
     try {
         let { page = 1, limit = 10, search = "", format } = req.query;
         page = parseInt(page);
@@ -129,7 +132,8 @@ router.get("/users", accepts("application/json"), async (req, res) => {
     }
 });
 
-router.post("/users", accepts("application/json"), async (req, res) => {
+// POST /users (ajouter un étudiant)
+router.post("/users", authRequired, roleRequired( "editeur"),accepts("application/json"), async (req, res) => {
     try {
         const { prenom, nom, email, da } = req.body;
         if (!prenom || !nom || !email || !da)
@@ -165,7 +169,7 @@ const upload = multer({
 });
 
 // POST /users/:id/photo (upload photo)
-router.post("/users/:id/photo", upload.single("photo"), (req, res) => {
+router.post("/users/:id/photo",authRequired, roleRequired( "editeur"), upload.single("photo"), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ message: "Aucune image reçue" });
         res.json({ message: "Photo téléversée avec succès", file: `${req.params.id}.png` });
@@ -175,7 +179,8 @@ router.post("/users/:id/photo", upload.single("photo"), (req, res) => {
     }
 });
 
-router.put("/users/:id", accepts("application/json"), async (req, res) => {
+// PUT /users/:id (modifier un étudiant)
+router.put("/users/:id",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;
         const { prenom, nom, email } = req.body;
@@ -220,7 +225,7 @@ router.get("/users/:id", accepts("application/json"), async (req, res) => {
 });
 
 // DELETE /users/:id (supprimer un étudiant)
-router.delete("/users/:id", accepts("application/json"), async (req, res) => {
+router.delete("/users/:id",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;
         const deleted = await deleteEtudiant(id);
@@ -301,7 +306,7 @@ router.get("/courses", accepts("application/json"), async (req, res) => {
 // section inscriptions
 
 // POST /inscriptions (ajouter)
-router.post("/inscriptions", accepts("application/json"), async (req, res) => {
+router.post("/inscriptions",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
     try {
         const { etudiantId, coursId } = req.body;
 
@@ -348,7 +353,7 @@ router.post("/inscriptions", accepts("application/json"), async (req, res) => {
 });
 
 // DELETE /inscriptions/:etudiantId/:coursId (supprimer)
-router.delete("/inscriptions/:etudiantId/:coursId", accepts("application/json"), async (req, res) => {
+router.delete("/inscriptions/:etudiantId/:coursId",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
     const { etudiantId, coursId } = req.params;
 
     try {

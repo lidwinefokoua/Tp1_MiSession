@@ -24,6 +24,7 @@ authRouter.get("/me", authRequired, async (req, res) => {
     res.status(200).json({
         message: "Utilisateur connecté",
         user: {
+            id: dbUser.id,
             nom: dbUser.nom,
             prenom: dbUser.prenom,
             role: dbUser.role

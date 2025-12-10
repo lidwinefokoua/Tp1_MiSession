@@ -34,9 +34,6 @@ export async function checkAuth() {
     if (profileName) profileName.textContent = `${user.prenom} ${user.nom}`;
     if (profileRole) profileRole.textContent = `Rôle : ${user.role}`;
 
-    if (profilePhoto) {
-        profilePhoto.src = `public/photos/${user.sub || user.id}.png`;
-    }
 
     return user;
 }

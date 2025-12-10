@@ -109,7 +109,13 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
             <td>${user.prenom}</td>
             <td>${user.courriel}</td>
         `;
-        tr.addEventListener("click", () => afficherDetailsEtudiant(user.id));
+        tr.addEventListener("click", () => {
+            if (!user.id) {
+                console.error("❌ user.id est undefined :", user);
+                return;
+            }
+            afficherDetailsEtudiant(user.id);
+        });
         tbody.appendChild(tr);
     });
 
@@ -198,12 +204,16 @@ async function enregistrerNouvelEtudiant() {
         if (!res.ok) throw new Error("Erreur ajout étudiant");
 
         const newEtudiant = await res.json();
+        const newId = newEtudiant.data.id;
 
         // Étape 2 : upload photo
         if (selectedFile) {
             const formData = new FormData();
             formData.append("photo", selectedFile);
-            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, {method: "POST", body: formData});
+            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, {
+                method: "POST",
+                credentials: "include",
+                body: formData});
             if (!uploadRes.ok) throw new Error("Erreur upload photo");
         }
 
@@ -314,7 +324,10 @@ confirmDeleteBtn.addEventListener("click", async () => {
     setTimeout(() => document.activeElement.blur(), 100);
 
     try {
-        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {method: "DELETE"});
+        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
+            method: "DELETE",
+        credentials: "include"
+        });
         if (!res.ok) throw new Error("Erreur suppression étudiant");
 
         alert("Étudiant supprimé !");

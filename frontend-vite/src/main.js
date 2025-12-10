@@ -5,6 +5,7 @@ const API_URL = `${API_BASE}/api/v2`;
 let currentPage = 1;
 let pageSize = 50;
 let currentEtudiantId = null;
+let sortNom = null;
 
 window.addEventListener("DOMContentLoaded", async () => {
     const user = await checkAuth();
@@ -82,17 +83,22 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
 async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=${pageSize}`) {
     const res = await fetch(url, {
-        headers: { Accept: "application/json" },
+        headers: {Accept: "application/json"},
         credentials: "include",
     });
-
+    const data = await res.json();
+    if (sortNom) {
+        data.data.sort((a, b) => {
+            if (a.nom < b.nom) return sortNom === "asc" ? -1 : 1;
+            if (a.nom > b.nom) return sortNom === "asc" ? 1 : -1;
+            return 0;
+        });
+    }
     if (res.status === 401) {
         console.warn("⚠️ 401 sur /users → retour login");
         window.location.href = "index.html";
         return;
     }
-
-    const data = await res.json();
 
     const tbody = document.getElementById("tableEtudiants");
     tbody.innerHTML = "";
@@ -186,9 +192,9 @@ async function enregistrerNouvelEtudiant() {
         // Étape 1 : ajout BD
         const res = await fetch(`${API_URL}/users`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             credentials: "include",
-            body: JSON.stringify({ prenom, nom, email, da })
+            body: JSON.stringify({prenom, nom, email, da})
         });
         if (!res.ok) throw new Error("Erreur ajout étudiant");
 
@@ -276,9 +282,9 @@ async function enregistrerModificationEtudiant() {
 
         const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             credentials: "include",
-            body: JSON.stringify({ prenom, nom, email })
+            body: JSON.stringify({prenom, nom, email})
         });
 
         if (!res.ok) throw new Error("Erreur modification");
@@ -371,7 +377,7 @@ document.getElementById("nombre").addEventListener("change", e => {
 async function afficherDetailsEtudiant(id) {
     try {
         const res = await fetch(`${API_URL}/users/${id}`, {
-            headers: { Accept: "application/json" },
+            headers: {Accept: "application/json"},
             credentials: "include",
         });
 
@@ -417,7 +423,7 @@ async function afficherCoursEtudiant(etudiantId) {
     try {
 
         const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, {
-            headers: { Accept: "application/json" },
+            headers: {Accept: "application/json"},
             credentials: "include",
         });
 
@@ -453,7 +459,7 @@ async function rechercherEtudiants(term) {
     const res = await fetch(
         `${API_URL}/users?search=${encodeURIComponent(term)}`,
         {
-            headers: { Accept: "application/json" },
+            headers: {Accept: "application/json"},
             credentials: "include",
         }
     );
@@ -487,9 +493,9 @@ document.querySelector("#formInscription .btn-success").addEventListener("click"
     try {
         const res = await fetch(`${API_URL}/inscriptions`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             credentials: "include",
-            body: JSON.stringify({ etudiantId, coursId }),
+            body: JSON.stringify({etudiantId, coursId}),
         });
 
         const data = await res.json();
@@ -533,7 +539,7 @@ document.querySelector("#formInscription .btn-danger").addEventListener("click",
 async function chargerCoursInscription() {
     try {
         const res = await fetch(`${API_URL}/courses`, {
-            headers: { Accept: "application/json" },
+            headers: {Accept: "application/json"},
             credentials: "include",
         });
 
@@ -639,8 +645,8 @@ function appliquerRestrictionsSelonRole(role) {
         const res = await fetch(`${API_BASE}/auth/password`, {
             method: "PUT",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ oldPassword, newPassword })
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({oldPassword, newPassword})
         });
 
         const data = await res.json();
@@ -684,4 +690,13 @@ function appliquerRestrictionsSelonRole(role) {
 
 }
 
+document.getElementById("sortNom").addEventListener("click", () => {
+
+    sortNom = sortNom === "asc" ? "desc" : "asc";
+
+    document.getElementById("sortNomIcon").textContent =
+        sortNom === "asc" ? "▲" : "▼";
+
+    loadEtudiants(`${API_URL}/users?page=${currentPage}&limit=${pageSize}`);
+});
 

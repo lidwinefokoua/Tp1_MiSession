@@ -22,8 +22,15 @@ import {
     countSearchEtudiants,
     getInscriptionsByEtudiant
 } from "./database.js";
-import {validateEtudiant, validateInscription} from "./Validator.js";
+import {validateEtudiant, validateInscription} from "./validators/Validator.js";
 import {authRequired, roleRequired} from "./auth/middlewar_auth.js";
+import {
+    createEtudiantSchema, createInscriptionSchema, deleteInscriptionParamsSchema,
+    etudiantIdParamSchema, getCoursesQuerySchema,
+    listEtudiantsSchema,
+    updateEtudiantSchema
+} from "./validators/etudiantsValidators.js";
+import {validateBody, validateParams, validateQuery} from "./validators/validate.js";
 
 const router = express.Router();
 router.use(baseUrl);
@@ -31,29 +38,17 @@ router.use(baseUrl);
 // section etudiants
 
 // GET /etudiants (liste + recherche + PDF)
-router.get("/etudiants", authRequired, roleRequired("normal", "editeur"), accepts("application/json"), async (req, res) => {
-    try {
-        let { page = 1, limit = 10, search = "", format } = req.query;
-        page = parseInt(page);
-        limit = parseInt(limit);
+router.get(
+    "/etudiants",
+    authRequired,
+    roleRequired("normal", "editeur"),
+    validateQuery(listEtudiantsSchema),
+    accepts("application/json"),
+    async (req, res) => {
+        try {
+            const { page, limit, search, format } = req.validated.query;
 
-        if (isNaN(limit) || limit < 5) limit = 5;
-        else if (limit > 100) {
-            return res.status(400).json({
-                status: 400,
-                message: "La limite maximale d’étudiants par page est 100.",
-                limit_utilisee: 100
-            });
-        }
-
-        if (isNaN(page) || page < 1) {
-            return res.status(400).json({
-                status: 400,
-                message: "Le numéro de page doit être supérieur ou égal à 1."
-            });
-        }
-
-        if (search && search.trim() !== "") {
+            if (search && search.trim() !== "") {
             const total = await countSearchEtudiants(search);
             const totalPages = Math.ceil(total / limit);
             const offset = (page - 1) * limit;
@@ -134,25 +129,31 @@ router.get("/etudiants", authRequired, roleRequired("normal", "editeur"), accept
 });
 
 // POST /etudiants (ajouter un étudiant)
-router.post("/etudiants", authRequired, roleRequired( "editeur"),accepts("application/json"), async (req, res) => {
-    try {
-        const { prenom, nom, email, da } = req.body;
-        if (!prenom || !nom || !email || !da)
-            return res.status(400).json({ message: "Champs obligatoires manquants" });
+router.post(
+    "/etudiants",
+    authRequired,
+    roleRequired("editeur"),
+    accepts("application/json"),
+    validateBody(createEtudiantSchema),
+    async (req, res) => {
+        try {
+            const { prenom, nom, email, da } = req.validated.body;
 
         const etudiant = await addEtudiant({ prenom, nom, courriel: email, da });
+
         if (!etudiant)
             return res.status(409).json({ message: "Conflit : l'étudiant existe déjà." });
 
-        res.status(201).json({
-            status: 201,
-            data: {
-                id: etudiant.id,
-                prenom: etudiant.prenom,
-                nom: etudiant.nom,
-                courriel: etudiant.courriel,
-                da: etudiant.da
-            }
+            return res.status(201).json({
+                status: 201,
+                message: "Étudiant créé avec succès.",
+                data: {
+                    id: etudiant.id,
+                    prenom: etudiant.prenom,
+                    nom: etudiant.nom,
+                    courriel: etudiant.courriel,
+                    da: etudiant.da
+                }
         });
 
     } catch (err) {
@@ -191,13 +192,17 @@ router.post("/etudiants/:id/photo",authRequired, roleRequired( "editeur"), uploa
 });
 
 // PUT /etudiants/:id (modifier un étudiant)
-router.put("/etudiants/:id",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { prenom, nom, email } = req.body;
-
-        if (!prenom || !nom || !email)
-            return res.status(400).json({ message: "Champs manquants" });
+router.put(
+    "/etudiants/:id",
+    authRequired,
+    roleRequired("editeur"),
+    accepts("application/json"),
+    validateParams(etudiantIdParamSchema),
+    validateBody(updateEtudiantSchema),
+    async (req, res) => {
+        try {
+            const { id } = req.validated.params;
+            const { prenom, nom, email } = req.validated.body;
 
         const updated = await updateEtudiant({ id, prenom, nom, courriel: email });
         if (!updated) return res.status(404).json({ message: "Étudiant introuvable" });
@@ -214,9 +219,13 @@ router.put("/etudiants/:id",authRequired, roleRequired( "editeur"), accepts("app
 });
 
 // GET /etudiants/:id (récupérer un étudiant)
-router.get("/etudiants/:id", accepts("application/json"), async (req, res) => {
-    try {
-        const { id } = req.params;
+router.get(
+    "/etudiants/:id",
+    accepts("application/json"),
+    validateParams(etudiantIdParamSchema),
+    async (req, res) => {
+        try {
+            const { id } = req.validated.params;
         const e = await getEtudiantById(id);
         if (!e) return res.status(404).json({ message: "Étudiant introuvable" });
 
@@ -236,9 +245,15 @@ router.get("/etudiants/:id", accepts("application/json"), async (req, res) => {
 });
 
 // DELETE /etudiants/:id (supprimer un étudiant)
-router.delete("/etudiants/:id",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
-    try {
-        const { id } = req.params;
+router.delete(
+    "/etudiants/:id",
+    authRequired,
+    roleRequired("editeur"),
+    accepts("application/json"),
+    validateParams(etudiantIdParamSchema),
+    async (req, res) => {
+        try {
+            const { id } = req.validated.params;
         const deleted = await deleteEtudiant(id);
         if (!deleted) return res.status(404).json({ message: "Étudiant introuvable" });
 
@@ -256,9 +271,13 @@ router.delete("/etudiants/:id",authRequired, roleRequired( "editeur"), accepts("
 // section cours
 
 // GET /etudiants/:id/courses (cours d’un étudiant)
-router.get("/etudiants/:id/courses", accepts("application/json"), async (req, res) => {
-    try {
-        const { id } = req.params;
+router.get(
+    "/etudiants/:id/courses",
+    accepts("application/json"),
+    validateParams(etudiantIdParamSchema),
+    async (req, res) => {
+        try {
+            const { id } = req.validated.params;
         const cours = await getCoursByEtudiant(id);
 
         if (!cours || cours.length === 0)
@@ -287,9 +306,13 @@ router.get("/etudiants/:id/courses", accepts("application/json"), async (req, re
 });
 
 // GET /courses (liste des cours)
-router.get("/courses", accepts("application/json"), async (req, res) => {
-    try {
-        const cours = await getAllCours();
+router.get(
+    "/courses",
+    accepts("application/json"),
+    validateQuery(getCoursesQuerySchema),
+    async (req, res) => {
+        try {
+            const cours = await getAllCours();
         if (!cours || cours.length === 0)
             return res.status(200).json({
                 status: 200,
@@ -317,15 +340,15 @@ router.get("/courses", accepts("application/json"), async (req, res) => {
 // section inscriptions
 
 // POST /inscriptions (ajouter)
-router.post("/inscriptions",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
-    try {
-        const { etudiantId, coursId } = req.body;
-
-        if (!etudiantId || !coursId)
-            return res.status(400).json({
-                status: 400,
-                message: "Les champs 'etudiantId' et 'coursId' sont requis."
-            });
+router.post(
+    "/inscriptions",
+    authRequired,
+    roleRequired("editeur"),
+    accepts("application/json"),
+    validateBody(createInscriptionSchema),
+    async (req, res) => {
+        try {
+            const { etudiantId, coursId } = req.validated.body;
 
         const inscriptions = await getInscriptionsByEtudiant(etudiantId);
         const dejaInscrit = inscriptions.some(i => i.id === parseInt(coursId));
@@ -364,17 +387,18 @@ router.post("/inscriptions",authRequired, roleRequired( "editeur"), accepts("app
 });
 
 // DELETE /inscriptions/:etudiantId/:coursId (supprimer)
-router.delete("/inscriptions/:etudiantId/:coursId",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
-    const { etudiantId, coursId } = req.params;
-
-    try {
-        if (!etudiantId || !coursId)
-            return res.status(400).json({
-                status: 400,
-                message: "Les paramètres 'etudiantId' et 'coursId' sont requis."
-            });
+router.delete(
+    "/inscriptions/:etudiantId/:coursId",
+    authRequired,
+    roleRequired("editeur"),
+    accepts("application/json"),
+    validateParams(deleteInscriptionParamsSchema),
+    async (req, res) => {
+        try {
+            const { etudiantId, coursId } = req.validated.params;
 
         const deleted = await deleteInscription(etudiantId, coursId);
+
         if (!deleted)
             return res.status(404).json({ message: "Inscription non trouvée" });
 

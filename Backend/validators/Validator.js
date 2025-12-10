@@ -18,31 +18,7 @@ export const userRegisterSchema = Joi.object({
     password: Joi.string().min(6).max(100).required()
 });
 
-export const etudiantSchema = Joi.object({
-    prenom: Joi.string()
-        .trim()
-        .regex(/^[A-Za-zÀ-ÿ\-'\s]+$/)
-        .min(2)
-        .max(50)
-        .required(),
 
-    nom: Joi.string()
-        .trim()
-        .regex(/^[A-Za-zÀ-ÿ\-'\s]+$/)
-        .min(2)
-        .max(50)
-        .required(),
-
-    email: Joi.string()
-        .email({ tlds: { allow: false } })
-        .required(),
-
-    da: Joi.string()
-        .regex(/^[0-9]{7,12}$/)
-        .required(),
-
-    id: Joi.any().forbidden()
-});
 
 
 /* ----------------------------------------------------------

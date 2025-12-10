@@ -1,30 +1,5 @@
 import Joi from "joi";
 
-export const etudiantSchema = Joi.object({
-    prenom: Joi.string()
-        .trim()
-        .regex(/^[A-Za-zÀ-ÿ\-'\s]+$/)
-        .min(2)
-        .max(50)
-        .required(),
-
-    nom: Joi.string()
-        .trim()
-        .regex(/^[A-Za-zÀ-ÿ\-'\s]+$/)
-        .min(2)
-        .max(50)
-        .required(),
-
-    email: Joi.string()
-        .email({ tlds: { allow: false } })
-        .required(),
-
-    da: Joi.string()
-        .regex(/^[0-9]{7,12}$/)
-        .required(),
-
-    id: Joi.any().forbidden()
-});
 
 export const listEtudiantsSchema = Joi.object({
     page: Joi.number()
@@ -93,8 +68,6 @@ export const createInscriptionSchema = Joi.object({
             "number.positive": "L'identifiant du cours doit être positif."
         })
 });
-
-import Joi from "joi";
 
 export const deleteInscriptionParamsSchema = Joi.object({
     etudiantId: Joi.number()

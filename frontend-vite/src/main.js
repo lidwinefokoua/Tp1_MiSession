@@ -81,7 +81,7 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
 //SECTION ÉTUDIANTS — Liste et Pagination
 
-async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=${pageSize}`) {
+async function loadEtudiants(url = `${API_URL}/etudiants?page=${currentPage}&limit=${pageSize}`) {
     const res = await fetch(url, {
         headers: {Accept: "application/json"},
         credentials: "include",
@@ -95,7 +95,7 @@ async function loadEtudiants(url = `${API_URL}/users?page=${currentPage}&limit=$
         });
     }
     if (res.status === 401) {
-        console.warn("⚠️ 401 sur /users → retour login");
+        console.warn("⚠️ 401 sur /etudiants → retour login");
         window.location.href = "index.html";
         return;
     }
@@ -195,7 +195,7 @@ async function enregistrerNouvelEtudiant() {
         if (!prenom || !nom || !email || !da) return alert("Veuillez remplir tous les champs.");
 
         // Étape 1 : ajout BD
-        const res = await fetch(`${API_URL}/users`, {
+        const res = await fetch(`${API_URL}/etudiants`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             credentials: "include",
@@ -210,7 +210,7 @@ async function enregistrerNouvelEtudiant() {
         if (selectedFile) {
             const formData = new FormData();
             formData.append("photo", selectedFile);
-            const uploadRes = await fetch(`${API_URL}/users/${newEtudiant.id}/photo`, {
+            const uploadRes = await fetch(`${API_URL}/etudiants/${newEtudiant.id}/photo`, {
                 method: "POST",
                 credentials: "include",
                 body: formData});
@@ -289,7 +289,7 @@ async function enregistrerModificationEtudiant() {
         const email = document.getElementById("email").value.trim();
         if (!prenom || !nom || !email) return alert("Veuillez remplir tous les champs.");
 
-        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
+        const res = await fetch(`${API_URL}/etudiants/${currentEtudiantId}`, {
             method: "PUT",
             headers: {"Content-Type": "application/json"},
             credentials: "include",
@@ -324,7 +324,7 @@ confirmDeleteBtn.addEventListener("click", async () => {
     setTimeout(() => document.activeElement.blur(), 100);
 
     try {
-        const res = await fetch(`${API_URL}/users/${currentEtudiantId}`, {
+        const res = await fetch(`${API_URL}/etudiants/${currentEtudiantId}`, {
             method: "DELETE",
         credentials: "include"
         });
@@ -361,13 +361,13 @@ cancelDeleteBtn.addEventListener("click", () => modalDelete.hide());
 
 document.getElementById("btnSearch").addEventListener("click", () => {
     const query = document.getElementById("searchEtudiant").value.trim();
-    const url = `${API_URL}/users?page=1&limit=${pageSize}&search=${encodeURIComponent(query)}`;
+    const url = `${API_URL}/etudiants?page=1&limit=${pageSize}&search=${encodeURIComponent(query)}`;
     loadEtudiants(url);
 });
 
 document.getElementById("btnReset").addEventListener("click", () => {
     document.getElementById("searchEtudiant").value = "";
-    loadEtudiants(`${API_URL}/users?page=1&limit=${pageSize}`);
+    loadEtudiants(`${API_URL}/etudiants?page=1&limit=${pageSize}`);
 });
 
 document.getElementById("searchEtudiant").addEventListener("keypress", e => {
@@ -380,7 +380,7 @@ document.getElementById("searchEtudiant").addEventListener("keypress", e => {
 document.getElementById("nombre").addEventListener("change", e => {
     pageSize = parseInt(e.target.value);
     currentPage = 1; // on revient à page 1
-    loadEtudiants(`${API_URL}/users?page=1&limit=${pageSize}`);
+    loadEtudiants(`${API_URL}/etudiants?page=1&limit=${pageSize}`);
 });
 
 
@@ -388,7 +388,7 @@ document.getElementById("nombre").addEventListener("change", e => {
 
 async function afficherDetailsEtudiant(id) {
     try {
-        const res = await fetch(`${API_URL}/users/${id}`, {
+        const res = await fetch(`${API_URL}/etudiants/${id}`, {
             headers: {Accept: "application/json"},
             credentials: "include",
         });
@@ -434,7 +434,7 @@ async function afficherCoursEtudiant(etudiantId) {
 
     try {
 
-        const res = await fetch(`${API_URL}/users/${etudiantId}/courses`, {
+        const res = await fetch(`${API_URL}/etudiants/${etudiantId}/courses`, {
             headers: {Accept: "application/json"},
             credentials: "include",
         });
@@ -469,7 +469,7 @@ async function afficherCoursEtudiant(etudiantId) {
 
 async function rechercherEtudiants(term) {
     const res = await fetch(
-        `${API_URL}/users?search=${encodeURIComponent(term)}`,
+        `${API_URL}/etudiants?search=${encodeURIComponent(term)}`,
         {
             headers: {Accept: "application/json"},
             credentials: "include",
@@ -596,7 +596,7 @@ function showMessage(text, type = "success") {
 
 document.getElementById("pdf").addEventListener("click", (e) => {
     e.preventDefault();
-    const pdfUrl = `${API_URL}/users?format=pdf&page=${currentPage}&limit=${pageSize}`;
+    const pdfUrl = `${API_URL}/etudiants?format=pdf&page=${currentPage}&limit=${pageSize}`;
     window.open(pdfUrl, "_blank");
 });
 
@@ -706,6 +706,6 @@ document.getElementById("sortNom").addEventListener("click", () => {
     document.getElementById("sortNomIcon").textContent =
         sortNom === "asc" ? "▲" : "▼";
 
-    loadEtudiants(`${API_URL}/users?page=${currentPage}&limit=${pageSize}`);
+    loadEtudiants(`${API_URL}/etudiants?page=${currentPage}&limit=${pageSize}`);
 });
 

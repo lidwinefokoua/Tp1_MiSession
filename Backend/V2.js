@@ -30,8 +30,8 @@ router.use(baseUrl);
 
 // section etudiants
 
-// GET /users (liste + recherche + PDF)
-router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("application/json"), async (req, res) => {
+// GET /etudiants (liste + recherche + PDF)
+router.get("/etudiants", authRequired, roleRequired("normal", "editeur"), accepts("application/json"), async (req, res) => {
     try {
         let { page = 1, limit = 10, search = "", format } = req.query;
         page = parseInt(page);
@@ -71,10 +71,10 @@ router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("a
                 })),
                 meta: { page, limit, totalItems: total, totalPages },
                 links: {
-                    first_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=1&limit=${limit}&search=${encodeURIComponent(search)}`,
-                    prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page - 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
-                    next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page + 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
-                    last_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=${totalPages}&limit=${limit}&search=${encodeURIComponent(search)}`
+                    first_page: `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=1&limit=${limit}&search=${encodeURIComponent(search)}`,
+                    prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${page - 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
+                    next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${page + 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
+                    last_page: `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${totalPages}&limit=${limit}&search=${encodeURIComponent(search)}`
                 }
             });
         }
@@ -111,7 +111,7 @@ router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("a
             status: 200,
             message: "Liste d’étudiants récupérée avec succès.",
             data: pageEtudiants.map(e => ({
-                href: `${req.protocol}://${req.get("host")}/api/v2/users/${e.id}`,
+                href: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${e.id}`,
                 id: e.id,
                 prenom: e.prenom,
                 nom: e.nom,
@@ -120,21 +120,21 @@ router.get("/users", authRequired, roleRequired("normal", "editeur"), accepts("a
             })),
             meta: { page, limit, totalItems: total, totalPages },
             links: {
-                pdf: `${req.protocol}://${req.get("host")}/api/v2/users?format=pdf&page=${page}&limit=${limit}`,
-                first_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=1&limit=${limit}`,
-                prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page - 1}&limit=${limit}` : null,
-                next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/users?page=${page + 1}&limit=${limit}` : null,
-                last_page: `${req.protocol}://${req.get("host")}/api/v2/users?page=${totalPages}&limit=${limit}`
+                pdf: `${req.protocol}://${req.get("host")}/api/v2/etudiants?format=pdf&page=${page}&limit=${limit}`,
+                first_page: `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=1&limit=${limit}`,
+                prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${page - 1}&limit=${limit}` : null,
+                next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${page + 1}&limit=${limit}` : null,
+                last_page: `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${totalPages}&limit=${limit}`
             }
         });
     } catch (err) {
-        console.error("Erreur /users :", err.stack || err);
+        console.error("Erreur /etudiants :", err.stack || err);
         res.status(500).json({ message: "Erreur serveur", error: err.message });
     }
 });
 
-// POST /users (ajouter un étudiant)
-router.post("/users", authRequired, roleRequired( "editeur"),accepts("application/json"), async (req, res) => {
+// POST /etudiants (ajouter un étudiant)
+router.post("/etudiants", authRequired, roleRequired( "editeur"),accepts("application/json"), async (req, res) => {
     try {
         const { prenom, nom, email, da } = req.body;
         if (!prenom || !nom || !email || !da)
@@ -179,8 +179,8 @@ const upload = multer({
     }
 });
 
-// POST /users/:id/photo (upload photo)
-router.post("/users/:id/photo",authRequired, roleRequired( "editeur"), upload.single("photo"), (req, res) => {
+// POST /etudiants/:id/photo (upload photo)
+router.post("/etudiants/:id/photo",authRequired, roleRequired( "editeur"), upload.single("photo"), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ message: "Aucune image reçue" });
         res.json({ message: "Photo téléversée avec succès", file: `${req.params.id}.png` });
@@ -190,8 +190,8 @@ router.post("/users/:id/photo",authRequired, roleRequired( "editeur"), upload.si
     }
 });
 
-// PUT /users/:id (modifier un étudiant)
-router.put("/users/:id",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
+// PUT /etudiants/:id (modifier un étudiant)
+router.put("/etudiants/:id",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;
         const { prenom, nom, email } = req.body;
@@ -208,13 +208,13 @@ router.put("/users/:id",authRequired, roleRequired( "editeur"), accepts("applica
             data: updated
         });
     } catch (err) {
-        console.error("Erreur PUT /users/:id :", err);
+        console.error("Erreur PUT /etudiants/:id :", err);
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
 
-// GET /users/:id (récupérer un étudiant)
-router.get("/users/:id", accepts("application/json"), async (req, res) => {
+// GET /etudiants/:id (récupérer un étudiant)
+router.get("/etudiants/:id", accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;
         const e = await getEtudiantById(id);
@@ -223,20 +223,20 @@ router.get("/users/:id", accepts("application/json"), async (req, res) => {
         res.status(200).json({
             status: 200,
             message: "Étudiant trouvé.",
-            data: {href: `${req.protocol}://${req.get("host")}/api/v2/users/${id}`,
+            data: {href: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${id}`,
                 prenom: e.prenom,
                 nom: e.nom,
                 courriel: e.courriel,
                 da: e.da }
         });
     } catch (err) {
-        console.error("Erreur GET /users/:id :", err);
+        console.error("Erreur GET /etudiants/:id :", err);
         res.status(500).json({ status: 500, message: "Erreur interne du serveur.", error: err.message });
     }
 });
 
-// DELETE /users/:id (supprimer un étudiant)
-router.delete("/users/:id",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
+// DELETE /etudiants/:id (supprimer un étudiant)
+router.delete("/etudiants/:id",authRequired, roleRequired( "editeur"), accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;
         const deleted = await deleteEtudiant(id);
@@ -248,15 +248,15 @@ router.delete("/users/:id",authRequired, roleRequired( "editeur"), accepts("appl
             data: { id }
         });
     } catch (err) {
-        console.error("Erreur DELETE /users/:id :", err);
+        console.error("Erreur DELETE /etudiants/:id :", err);
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
 
 // section cours
 
-// GET /users/:id/courses (cours d’un étudiant)
-router.get("/users/:id/courses", accepts("application/json"), async (req, res) => {
+// GET /etudiants/:id/courses (cours d’un étudiant)
+router.get("/etudiants/:id/courses", accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;
         const cours = await getCoursByEtudiant(id);
@@ -281,7 +281,7 @@ router.get("/users/:id/courses", accepts("application/json"), async (req, res) =
             data: filteredCours
         });
     } catch (err) {
-        console.error("Erreur /users/:id/courses :", err);
+        console.error("Erreur /etudiants/:id/courses :", err);
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
@@ -353,7 +353,7 @@ router.post("/inscriptions",authRequired, roleRequired( "editeur"), accepts("app
                 date_inscription: inscription.date_inscription
             },
             links: {
-                etudiant: `${req.protocol}://${req.get("host")}/api/v2/users/${etudiantId}`,
+                etudiant: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${etudiantId}`,
                 cours: `${req.protocol}://${req.get("host")}/api/v2/courses/${coursId}`
             }
         });

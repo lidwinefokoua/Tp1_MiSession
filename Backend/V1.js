@@ -31,7 +31,7 @@ router.use(baseUrl);
 // section etudiants
 
 // GET /users (liste + recherche + PDF)
-router.get("/users", accepts("application/json"), async (req, res) => {
+router.get("/etudiants", accepts("application/json"), async (req, res) => {
     try {
         let page = parseInt(req.query.page) || 1;
         let limit = parseInt(req.query.limit) || 50;
@@ -119,7 +119,7 @@ router.get("/users", accepts("application/json"), async (req, res) => {
     }
 });
 
-router.post("/users", accepts("application/json"), async (req, res) => {
+router.post("/etudiants", accepts("application/json"), async (req, res) => {
     try {
         const {prenom, nom, email, da} = req.body;
         if (!prenom || !nom || !email || !da)
@@ -158,7 +158,7 @@ const upload = multer({
 });
 
 // POST /users/:id/photo (upload photo)
-router.post("/users/:id/photo", upload.single("photo"), (req, res) => {
+router.post("/etudiants/:id/photo", upload.single("photo"), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({message: "Aucune image reçue"});
         res.json({message: "Photo téléversée avec succès", file: `${req.params.id}.png`});
@@ -169,7 +169,7 @@ router.post("/users/:id/photo", upload.single("photo"), (req, res) => {
 });
 
 // PUT /users/:id (modifier un étudiant)
-router.put("/users/:id", accepts("application/json"), async (req, res) => {
+router.put("/etudiants/:id", accepts("application/json"), async (req, res) => {
     try {
         const {id} = req.params;
         const {prenom, nom, email} = req.body;
@@ -192,7 +192,7 @@ router.put("/users/:id", accepts("application/json"), async (req, res) => {
 });
 
 // GET /users/:id (récupérer un étudiant)
-router.get("/users/:id", accepts("application/json"), async (req, res) => {
+router.get("/etudiants/:id", accepts("application/json"), async (req, res) => {
     try {
         const {id} = req.params;
         const e = await getEtudiantById(id);
@@ -210,7 +210,7 @@ router.get("/users/:id", accepts("application/json"), async (req, res) => {
 });
 
 // DELETE /users/:id (supprimer un étudiant)
-router.delete("/users/:id", accepts("application/json"), async (req, res) => {
+router.delete("/etudiants/:id", accepts("application/json"), async (req, res) => {
     try {
         const {id} = req.params;
         const deleted = await deleteEtudiant(id);
@@ -230,7 +230,7 @@ router.delete("/users/:id", accepts("application/json"), async (req, res) => {
 // section cours
 
 // GET /users/:id/courses (cours d’un étudiant)
-router.get("/users/:id/courses", accepts("application/json"), async (req, res) => {
+router.get("/etudiants/:id/courses", accepts("application/json"), async (req, res) => {
     try {
         const {id} = req.params;
         const cours = await getCoursByEtudiant(id);

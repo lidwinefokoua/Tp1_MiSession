@@ -18,7 +18,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
             body: JSON.stringify({ email, password })
         });
     } catch (err) {
-        console.error("🚨 Erreur réseau :", err);
+        console.error("🚨Erreur réseau :", err);
         msgBox.className = "alert alert-danger";
         msgBox.textContent = "Impossible de contacter le serveur.";
         msgBox.classList.remove("d-none");

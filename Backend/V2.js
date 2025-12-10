@@ -150,7 +150,6 @@ router.post("/users", accepts("application/json"), async (req, res) => {
     }
 });
 
-// Configuration Multer (upload PNG uniquement)
 const upload = multer({
     storage: multer.diskStorage({
         destination: (req, file, cb) => {

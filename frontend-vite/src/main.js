@@ -16,7 +16,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     await chargerCoursInscription();
 });
 
-// --- FIX 1 : checkAuth doit RETOURNER le user ---
 async function checkAuth() {
     console.log("🔒 Vérification de la session…");
 
@@ -33,7 +32,6 @@ async function checkAuth() {
     const data = await res.json();
     const user = data.user;
 
-    // Affichage profil
     document.getElementById("profileName").textContent =
         user.nom && user.prenom
             ? `${user.prenom} ${user.nom}`

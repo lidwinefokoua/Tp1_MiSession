@@ -175,7 +175,6 @@ router.post("/users/:id/photo", upload.single("photo"), (req, res) => {
     }
 });
 
-// PUT /users/:id (modifier un étudiant)
 router.put("/users/:id", accepts("application/json"), async (req, res) => {
     try {
         const { id } = req.params;

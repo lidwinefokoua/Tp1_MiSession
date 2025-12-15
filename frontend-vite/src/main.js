@@ -6,6 +6,12 @@ let currentPage = 1;
 let pageSize = 50;
 let currentEtudiantId = null;
 let sortNom = null;
+let etudiantsLinks = {};
+let currentEtudiantHref = null;
+let currentEtudiantsUrl = null;
+let etudiantsEntryPoint = `${API_URL}/etudiants`;
+const ALLOWED_LIMITS = [10, 20, 25, 30, 35, 40, 50, 100];
+
 
 window.addEventListener("DOMContentLoaded", async () => {
     const user = await checkAuth();
@@ -32,6 +38,7 @@ async function checkAuth() {
 
     const data = await res.json();
     const user = data.user;
+    localStorage.setItem("user", JSON.stringify(user));
 
     document.getElementById("profileName").textContent =
         user.nom && user.prenom
@@ -81,12 +88,17 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
 //SECTION ÉTUDIANTS — Liste et Pagination
 
-async function loadEtudiants(url = `${API_URL}/etudiants?page=${currentPage}&limit=${pageSize}`) {
+async function loadEtudiants(url = currentEtudiantsUrl || `${API_URL}/etudiants`) {
+    currentEtudiantsUrl = url;
+
     const res = await fetch(url, {
         headers: {Accept: "application/json"},
         credentials: "include",
     });
     const data = await res.json();
+
+    etudiantsLinks = data.links || {};
+
     if (sortNom) {
         data.data.sort((a, b) => {
             if (a.nom < b.nom) return sortNom === "asc" ? -1 : 1;
@@ -103,6 +115,11 @@ async function loadEtudiants(url = `${API_URL}/etudiants?page=${currentPage}&lim
     tbody.innerHTML = "";
 
     data.data.forEach(user => {
+        if (!user.href) {
+            console.error("Étudiant sans href (API invalide)", user);
+            return;
+        }
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${user.nom}</td>
@@ -110,12 +127,9 @@ async function loadEtudiants(url = `${API_URL}/etudiants?page=${currentPage}&lim
             <td>${user.courriel}</td>
         `;
         tr.addEventListener("click", () => {
-            if (!user.id) {
-                console.error("❌ user.id est undefined :", user);
-                return;
-            }
-            afficherDetailsEtudiant(user.id);
+            afficherDetailsEtudiant(user.href);
         });
+
         tbody.appendChild(tr);
     });
 
@@ -192,7 +206,10 @@ async function enregistrerNouvelEtudiant() {
         const email = document.getElementById("email").value.trim();
         const da = document.getElementById("DA").value.trim();
 
-        if (!prenom || !nom || !email || !da) return alert("Veuillez remplir tous les champs.");
+        if (!prenom || !nom || !email || !da) {
+            alert("Veuillez remplir tous les champs.");
+            return;
+        }
 
         // Étape 1 : ajout BD
         const res = await fetch(`${API_URL}/etudiants`, {
@@ -203,23 +220,28 @@ async function enregistrerNouvelEtudiant() {
         });
         if (!res.ok) throw new Error("Erreur ajout étudiant");
 
-        const newEtudiant = await res.json();
-        const newId = newEtudiant.data.id;
+        const created = await res.json();
+        const etudiantHref = created.data.href;
 
         // Étape 2 : upload photo
         if (selectedFile) {
             const formData = new FormData();
             formData.append("photo", selectedFile);
-            const uploadRes = await fetch(`${API_URL}/etudiants/${newEtudiant.id}/photo`, {
+
+            const uploadRes = await fetch(`${etudiantHref}/photo`, {
                 method: "POST",
                 credentials: "include",
-                body: formData});
+                body: formData
+            });
+
             if (!uploadRes.ok) throw new Error("Erreur upload photo");
         }
 
         alert("Étudiant ajouté avec succès !");
         desactiverModeAjout();
         await loadEtudiants();
+        await afficherDetailsEtudiant(etudiantHref);
+
     } catch (err) {
         console.error("Erreur ajout étudiant:", err);
         alert("Erreur lors de l’enregistrement de l’étudiant.");
@@ -289,7 +311,7 @@ async function enregistrerModificationEtudiant() {
         const email = document.getElementById("email").value.trim();
         if (!prenom || !nom || !email) return alert("Veuillez remplir tous les champs.");
 
-        const res = await fetch(`${API_URL}/etudiants/${currentEtudiantId}`, {
+        const res = await fetch(currentEtudiantHref, {
             method: "PUT",
             headers: {"Content-Type": "application/json"},
             credentials: "include",
@@ -300,7 +322,7 @@ async function enregistrerModificationEtudiant() {
         const updated = await res.json();
 
         alert("Étudiant modifié !");
-        await afficherDetailsEtudiant(updated.data.id);
+        await afficherDetailsEtudiant(currentEtudiantHref);
         await loadEtudiants();
         desactiverModeEdition();
     } catch (err) {
@@ -324,9 +346,9 @@ confirmDeleteBtn.addEventListener("click", async () => {
     setTimeout(() => document.activeElement.blur(), 100);
 
     try {
-        const res = await fetch(`${API_URL}/etudiants/${currentEtudiantId}`, {
+        const res = await fetch(currentEtudiantHref, {
             method: "DELETE",
-        credentials: "include"
+            credentials: "include"
         });
         if (!res.ok) throw new Error("Erreur suppression étudiant");
 
@@ -347,27 +369,33 @@ cancelDeleteBtn.addEventListener("click", () => modalDelete.hide());
 
 //RECHERCHE, PAGINATION, NOMBRE PAR PAGE
 
-["firstBtn", "prevBtn", "nextBtn", "lastBtn"].forEach(id => {
-    document.getElementById(id).addEventListener("click", e => {
-        const url = e.target.dataset.url;
+const pagerMap = {
+    firstBtn: "first_page",
+    prevBtn: "prev_page",
+    nextBtn: "next_page",
+    lastBtn: "last_page",
+};
+
+Object.entries(pagerMap).forEach(([btnId, rel]) => {
+    document.getElementById(btnId).addEventListener("click", () => {
+        const url = etudiantsLinks?.[rel];
         if (!url) return;
-
-        const params = new URL(url).searchParams;
-        currentPage = parseInt(params.get("page")) || 1;
-
         loadEtudiants(url);
     });
 });
 
+
 document.getElementById("btnSearch").addEventListener("click", () => {
     const query = document.getElementById("searchEtudiant").value.trim();
-    const url = `${API_URL}/etudiants?page=1&limit=${pageSize}&search=${encodeURIComponent(query)}`;
-    loadEtudiants(url);
+    if (!query) return;
+
+    const searchUrl = `${API_URL}/etudiants?search=${encodeURIComponent(query)}`;
+    loadEtudiants(searchUrl);
 });
 
 document.getElementById("btnReset").addEventListener("click", () => {
     document.getElementById("searchEtudiant").value = "";
-    loadEtudiants(`${API_URL}/etudiants?page=1&limit=${pageSize}`);
+    loadEtudiants();
 });
 
 document.getElementById("searchEtudiant").addEventListener("keypress", e => {
@@ -379,16 +407,20 @@ document.getElementById("searchEtudiant").addEventListener("keypress", e => {
 
 document.getElementById("nombre").addEventListener("change", e => {
     pageSize = parseInt(e.target.value);
-    currentPage = 1; // on revient à page 1
-    loadEtudiants(`${API_URL}/etudiants?page=1&limit=${pageSize}`);
+
+    if (!pageSize) return;
+
+    const url = `${API_URL}/etudiants?limit=${pageSize}`;
+    loadEtudiants(url);
 });
+
 
 
 //AFFICHAGE DÉTAILS + COURS ÉTUDIANT
 
-async function afficherDetailsEtudiant(id) {
+async function afficherDetailsEtudiant(url) {
     try {
-        const res = await fetch(`${API_URL}/etudiants/${id}`, {
+        const res = await fetch(url, {
             headers: {Accept: "application/json"},
             credentials: "include",
         });
@@ -397,7 +429,10 @@ async function afficherDetailsEtudiant(id) {
 
         const response = await res.json();
         const e = response.data;
-        currentEtudiantId = id;
+
+        // Extraire l’id depuis le href (important pour PUT/DELETE)
+        currentEtudiantId = e.href.split("/").pop();
+        currentEtudiantHref = e.href;
 
         document.getElementById("prenom").value = e.prenom || "";
         document.getElementById("nom").value = e.nom || "";
@@ -405,17 +440,19 @@ async function afficherDetailsEtudiant(id) {
         document.getElementById("DA").value = e.da || "";
 
         const photo = document.getElementById("photoEtudiant");
-        photo.src = `photos/${id}.png`;
+        photo.src = `photos/${currentEtudiantId}.png`;
+
         photo.onerror = () => {
             photo.src = "photos/0.png";
         };
 
-        await afficherCoursEtudiant(id);
+        await afficherCoursEtudiant(`${e.href}/courses`);
+
 
         const selectEtudiant = document.getElementById("selectEtudiant");
         selectEtudiant.innerHTML = "";
         const option = document.createElement("option");
-        option.value = id;
+        option.value = currentEtudiantId;
         option.textContent = `${e.prenom} ${e.nom} (${e.da || ""})`;
         option.selected = true;
         selectEtudiant.appendChild(option);
@@ -428,19 +465,19 @@ async function afficherDetailsEtudiant(id) {
 
 //AFFICHAGE DES COURS D’UN ÉTUDIANT
 
-async function afficherCoursEtudiant(etudiantId) {
+async function afficherCoursEtudiant(url) {
     const tbody = document.getElementById("tableCours");
     tbody.innerHTML = `<tr><td colspan="4" class="text-muted">Chargement...</td></tr>`;
 
     try {
-
-        const res = await fetch(`${API_URL}/etudiants/${etudiantId}/courses`, {
+        const res = await fetch(url, {
             headers: {Accept: "application/json"},
             credentials: "include",
         });
 
         const response = await res.json();
         const cours = Array.isArray(response.data) ? response.data : [];
+
         tbody.innerHTML = "";
 
         if (cours.length === 0) {
@@ -477,7 +514,7 @@ async function rechercherEtudiants(term) {
     );
 
     const data = await res.json();
-    return data.data;
+    return Array.isArray(data.data) ? data.data : [];
 }
 
 const searchInput = document.getElementById("searchEtudiantInscription");
@@ -486,60 +523,95 @@ const selectEtudiant = document.getElementById("selectEtudiant");
 searchInput.addEventListener("input", async () => {
     const term = searchInput.value.trim();
     if (term.length < 2) return;
-    const results = await rechercherEtudiants(term);
-    selectEtudiant.innerHTML = "";
-    results.forEach(e => {
-        const option = document.createElement("option");
-        option.value = e.id;
-        option.textContent = `${e.prenom} ${e.nom} (${e.da})`;
-        selectEtudiant.appendChild(option);
-    });
-});
-
-// Inscrire
-document.querySelector("#formInscription .btn-success").addEventListener("click", async () => {
-    const etudiantId = document.getElementById("selectEtudiant").value;
-    const coursId = document.getElementById("selectCours").value;
-    if (!etudiantId || !coursId) return showMessage("Sélectionnez un étudiant et un cours.");
-
     try {
-        const res = await fetch(`${API_URL}/inscriptions`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            credentials: "include",
-            body: JSON.stringify({etudiantId, coursId}),
+        const results = await rechercherEtudiants(term);
+
+        selectEtudiant.innerHTML = "";
+
+        results.forEach(e => {
+            if (!e.href) {
+                console.error("Étudiant sans href (API invalide)", e);
+                return;
+            }
+
+            const option = document.createElement("option");
+            option.value = e.href; // HATEOAS
+            option.textContent = `${e.prenom} ${e.nom} (${e.da || ""})`;
+            selectEtudiant.appendChild(option);
         });
-
-        const data = await res.json();
-
-        if (!res.ok) return showMessage(data.message || "Erreur d’inscription.", "error");
-        showMessage("Étudiant inscrit !");
-        if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
     } catch (err) {
         console.error(err);
-        showMessage("Impossible d’inscrire l’étudiant.");
+        showMessage("Erreur lors de la recherche.", "error");
     }
 });
 
+// Inscrire
+document.querySelector("#formInscription .btn-success")
+    .addEventListener("click", async () => {
+        const etudiantHref = document.getElementById("selectEtudiant").value;
+        const coursHref = document.getElementById("selectCours").value;
+        const coursId = coursHref.split("/").pop();
+
+
+        if (!etudiantHref || !coursId) {
+            return showMessage("Sélectionnez un étudiant et un cours.");
+        }
+
+        const etudiantId = etudiantHref.split("/").pop();
+
+        try {
+            const res = await fetch(`${API_URL}/inscriptions`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                credentials: "include",
+                body: JSON.stringify({etudiantId, coursId}),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) return showMessage(data.message || "Erreur d’inscription.", "error");
+
+            showMessage("Étudiant inscrit !");
+
+            if (currentEtudiantHref === etudiantHref) {
+                await afficherCoursEtudiant(`${etudiantHref}/courses`);
+            }
+        } catch (err) {
+            console.error(err);
+            showMessage("Impossible d’inscrire l’étudiant.");
+        }
+    });
+
 // Désinscrire
-document.querySelector("#formInscription .btn-danger").addEventListener("click", async () => {
-    const etudiantId = document.getElementById("selectEtudiant").value;
-    const coursId = document.getElementById("selectCours").value;
-    if (!etudiantId || !coursId) return showMessage("Sélectionnez un étudiant et un cours.");
-    if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
+document.querySelector("#formInscription .btn-danger")
+    .addEventListener("click", async () => {
+        const etudiantHref = document.getElementById("selectEtudiant").value;
+        const coursId = document.getElementById("selectCours").value;
+
+        if (!etudiantHref || !coursId) {
+            return showMessage("Sélectionnez un étudiant et un cours.");
+        }
+
+        if (!confirm("Voulez-vous désinscrire cet étudiant ?")) return;
+
+        const etudiantId = etudiantHref.split("/").pop();
 
     try {
         const res = await fetch(
             `${API_URL}/inscriptions/${etudiantId}/${coursId}`,
             {
-                method: "DELETE",
-                credentials: "include",
-            }
+                    method: "DELETE",
+                    credentials: "include",
+                }
         );
 
         if (!res.ok) throw new Error("Erreur désinscription");
+
         showMessage("Étudiant désinscrit !");
-        if (etudiantId == currentEtudiantId) await afficherCoursEtudiant(currentEtudiantId);
+
+        if (currentEtudiantHref === etudiantHref) {
+            await afficherCoursEtudiant(`${etudiantHref}/courses`);
+        }
     } catch (err) {
         console.error(err);
         showMessage("Impossible de désinscrire l’étudiant.");
@@ -571,7 +643,7 @@ async function chargerCoursInscription() {
 
         cours.forEach(c => {
             const option = document.createElement("option");
-            option.value = c.id;
+            option.value = c.href;
             option.textContent = `${c.code} - ${c.nom}`;
             selectCours.appendChild(option);
         });
@@ -596,17 +668,17 @@ function showMessage(text, type = "success") {
 
 document.getElementById("pdf").addEventListener("click", (e) => {
     e.preventDefault();
-    const pdfUrl = `${API_URL}/etudiants?format=pdf&page=${currentPage}&limit=${pageSize}`;
-    window.open(pdfUrl, "_blank");
+
+    if (!etudiantsLinks.pdf) {
+        alert("Lien PDF indisponible.");
+        return;
+    }
+
+    window.open(etudiantsLinks.pdf, "_blank");
 });
 
 
 // Remplir les infos du profil au moment du clic
-
-document.getElementById("btnLogout").addEventListener("click", () => {
-    localStorage.removeItem("token");
-    window.location.href = "index.html";
-});
 
 function appliquerRestrictionsSelonRole(role) {
     console.log("🎭 Rôle détecté :", role);
@@ -700,12 +772,18 @@ document.getElementById("btnLogout").addEventListener("click", async () => {
 
 
 document.getElementById("sortNom").addEventListener("click", () => {
-
     sortNom = sortNom === "asc" ? "desc" : "asc";
 
     document.getElementById("sortNomIcon").textContent =
         sortNom === "asc" ? "▲" : "▼";
 
-    loadEtudiants(`${API_URL}/etudiants?page=${currentPage}&limit=${pageSize}`);
+    if (!currentEtudiantsUrl) {
+        console.warn("URL courante inconnue, rechargement par défaut");
+        loadEtudiants();
+        return;
+    }
+
+    loadEtudiants(currentEtudiantsUrl);
 });
+
 

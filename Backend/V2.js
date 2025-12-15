@@ -30,9 +30,11 @@ import {
     updateEtudiantSchema
 } from "./validators/etudiantsValidators.js";
 import {validateBody, validateParams, validateQuery} from "./validators/validate.js";
+import {buildEtudiantsLinks} from "./Utils/hateoas.js";
 
 const router = express.Router();
 router.use(baseUrl);
+const ALLOWED_LIMITS = [10, 20, 25, 30, 35, 40, 50, 100];
 
 // section etudiants
 
@@ -57,6 +59,7 @@ router.get(
                 status: 200,
                 message: "Résultats de la recherche.",
                 data: results.map(e => ({
+                    href: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${e.id}`,
                     id: e.id,
                     prenom: e.prenom,
                     nom: e.nom,
@@ -64,12 +67,7 @@ router.get(
                     da: e.da
                 })),
                 meta: { page, limit, totalItems: total, totalPages },
-                links: {
-                    first_page: `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=1&limit=${limit}&search=${encodeURIComponent(search)}`,
-                    prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${page - 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
-                    next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${page + 1}&limit=${limit}&search=${encodeURIComponent(search)}` : null,
-                    last_page: `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${totalPages}&limit=${limit}&search=${encodeURIComponent(search)}`
-                }
+                links: buildEtudiantsLinks(req, { page, limit, totalPages, search })
             });
         }
 
@@ -105,21 +103,16 @@ router.get(
             status: 200,
             message: "Liste d’étudiants récupérée avec succès.",
             data: pageEtudiants.map(e => ({
-                href: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${e.id}`,
                 id: e.id,
                 prenom: e.prenom,
                 nom: e.nom,
                 courriel: e.courriel,
+                href: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${e.id}`,
 
             })),
             meta: { page, limit, totalItems: total, totalPages },
-            links: {
-                pdf: `${req.protocol}://${req.get("host")}/api/v2/etudiants?format=pdf&page=${page}&limit=${limit}`,
-                first_page: `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=1&limit=${limit}`,
-                prev_page: page > 1 ? `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${page - 1}&limit=${limit}` : null,
-                next_page: page < totalPages ? `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${page + 1}&limit=${limit}` : null,
-                last_page: `${req.protocol}://${req.get("host")}/api/v2/etudiants?page=${totalPages}&limit=${limit}`
-            }
+            links: buildEtudiantsLinks(req, { page, limit, totalPages })
+
         });
     } catch (err) {
         console.error("Erreur /etudiants :", err.stack || err);
@@ -147,7 +140,7 @@ router.post(
                 status: 201,
                 message: "Étudiant créé avec succès.",
                 data: {
-                    id: etudiant.id,
+                    href: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${etudiant.id}`,
                     prenom: etudiant.prenom,
                     nom: etudiant.nom,
                     courriel: etudiant.courriel,
@@ -283,10 +276,14 @@ router.get(
             return res.status(200).json({
                 status: 200,
                 message: "Aucun cours inscrit pour cet étudiant.",
-                data: []
+                data: [],
+                links: {
+                    etudiant: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${id}`
+                }
             });
 
         const filteredCours = cours.map(c => ({
+            href: `${req.protocol}://${req.get("host")}/api/v2/courses/${c.id}`,
             code: c.code,
             nom: c.nom_cours,
             enseignant: c.enseignant,
@@ -296,7 +293,11 @@ router.get(
         res.status(200).json({
             status: 200,
             message: "Cours récupérés avec succès.",
-            data: filteredCours
+            data: filteredCours,
+            links: {
+                self: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${id}/courses`,
+                etudiant: `${req.protocol}://${req.get("host")}/api/v2/etudiants/${id}`
+            }
         });
     } catch (err) {
         console.error("Erreur /etudiants/:id/courses :", err);
@@ -410,5 +411,6 @@ router.delete(
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
+
 
 export default router;

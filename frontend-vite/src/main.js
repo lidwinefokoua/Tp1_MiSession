@@ -426,7 +426,6 @@ async function afficherDetailsEtudiant(url) {
         });
 
         if (!res.ok) throw new Error("Étudiant introuvable");
-
         const response = await res.json();
         const e = response.data;
 

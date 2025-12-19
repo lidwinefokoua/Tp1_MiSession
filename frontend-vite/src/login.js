@@ -7,7 +7,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const password = document.getElementById("password").value.trim();
     const msgBox = document.getElementById("loginMsg");
 
-    console.log("🔐 Tentative de connexion…", { email, password });
+    console.log("Tentative de connexion…", { email, password });
 
     let response;
     try {
@@ -18,7 +18,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
             body: JSON.stringify({ email, password })
         });
     } catch (err) {
-        console.error("🚨Erreur réseau :", err);
+        console.error("Erreur réseau :", err);
         msgBox.className = "alert alert-danger";
         msgBox.textContent = "Impossible de contacter le serveur.";
         msgBox.classList.remove("d-none");
@@ -28,9 +28,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     let result;
     try {
         result = await response.json();
-        console.log("📥 JSON reçu :", result);
+        console.log("JSON reçu :", result);
     } catch (err) {
-        console.error("⚠️ Impossible de lire le JSON :", err);
+        console.error(" Impossible de lire le JSON :", err);
         return;
     }
 

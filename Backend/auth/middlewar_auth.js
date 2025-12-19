@@ -1,8 +1,7 @@
 import jwt from "jsonwebtoken";
 
-//
-// 🔐 Vérifie que l’utilisateur est authentifié
-//
+// Vérifie que l’utilisateur est authentifié
+
 export function authenticated(req, res, next) {
     const token = req.cookies?.access_token;
 
@@ -13,7 +12,6 @@ export function authenticated(req, res, next) {
     try {
         const payload = jwt.verify(token, process.env.SESSION_SECRET);
 
-        // Déposer les infos dans req.user
         req.user = {
             id: payload.sub,
             role: payload.role,
@@ -26,12 +24,8 @@ export function authenticated(req, res, next) {
     }
 }
 
-//
-// 🔐 Vérifie que l’utilisateur a UN DES rôles autorisés
-//
-// Exemple :
-// app.get("/cours", authorized("editeur"), ...)
-//
+// Vérifie que l’utilisateur a UN DES rôles autorisés
+
 export function roleRequired(...allowedRoles) {
     return (req, res, next) => {
 

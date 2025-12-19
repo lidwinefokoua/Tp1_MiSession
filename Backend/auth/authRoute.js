@@ -93,7 +93,6 @@ authRouter.post(
 
             const user = await getUserByEmail(email);
 
-            // 1. Vérifier l’existence de l’utilisateur
             if (!user) {
                 return res.status(401).json({ message: "Identifiants invalides." });
             }
@@ -177,9 +176,8 @@ authRouter.put(
 });
 
 
-//
-// 🚪 Déconnexion
-//
+// Déconnexion
+
 authRouter.delete(
     "/disable",
     authRequired,
@@ -188,10 +186,8 @@ authRouter.delete(
         try {
             const { sub: userId } = req.validated.user;
 
-        // Désactiver le compte
         await updateSubscribed(userId, false);
 
-        // Supprimer le cookie
         res.clearCookie("access_token");
 
         res.status(200).json({ message: "Compte déconnecté et désactivé." });

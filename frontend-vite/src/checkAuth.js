@@ -23,7 +23,6 @@ export async function checkAuth() {
 
     const user = data.user;
 
-    // Sauvegarder localement pour les actions (ajout/modif)
     localStorage.setItem("user", JSON.stringify(user));
 
 // UI du menu profil

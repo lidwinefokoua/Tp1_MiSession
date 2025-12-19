@@ -680,7 +680,7 @@ document.getElementById("pdf").addEventListener("click", (e) => {
 // Remplir les infos du profil au moment du clic
 
 function appliquerRestrictionsSelonRole(role) {
-    console.log("🎭 Rôle détecté :", role);
+    console.log(" Rôle détecté :", role);
 
     const isNormal = role === "normal";
     const isEditor = role === "editeur";
